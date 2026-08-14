@@ -1,0 +1,317 @@
+<style>
+    .repair-list .status-badge {display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;}
+    .repair-list .search-card {margin-bottom:15px;}
+    .repair-list .search-card .layui-form-item {margin-bottom:0;}
+    .repair-list .img-thumb {width:50px;height:50px;object-fit:cover;border-radius:4px;cursor:pointer;}
+    .repair-list .detail-row {margin-bottom:12px;line-height:24px;}
+    .repair-list .detail-label {display:inline-block;width:100px;color:#666;font-weight:bold;}
+    .repair-list .detail-value {color:#333;}
+    .repair-list .rate-tips {margin-left:10px;color:#999;font-size:12px;}
+</style>
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main repair-list">
+        <div class="layui-card search-card">
+            <div class="layui-card-body">
+                <form class="layui-form" lay-filter="searchForm">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">状态</label>
+                            <div class="layui-input-inline" style="width:160px;">
+                                <select name="repStatus">
+                                    <option value="">全部状态</option>
+                                    <option value="0">待指派</option>
+                                    <option value="1">待接单</option>
+                                    <option value="2">维修中</option>
+                                    <option value="3">已完成</option>
+                                    <option value="4">已评价</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">紧急度</label>
+                            <div class="layui-input-inline" style="width:160px;">
+                                <select name="urgency">
+                                    <option value="">全部紧急度</option>
+                                    <option value="0">普通</option>
+                                    <option value="1">紧急</option>
+                                    <option value="2">非常紧急</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">关键字</label>
+                            <div class="layui-input-inline" style="width:180px;">
+                                <input type="text" name="keyword" placeholder="报修物品/描述" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button class="layui-btn layui-btn-normal" lay-submit lay-filter="data-search-btn">
+                                <i class="layui-icon layui-icon-search"></i>搜索
+                            </button>
+                            <button type="reset" class="layui-btn layui-btn-primary" id="resetBtn">
+                                <i class="layui-icon layui-icon-refresh"></i>重置
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="layui-card">
+            <div class="layui-card-header" style="font-weight:bold;">
+                <i class="fa fa-list-alt" style="color:#1e9fff;margin-right:8px;"></i>我的报修列表
+            </div>
+            <div class="layui-card-body">
+                <table class="layui-hide" id="repairTable" lay-filter="repairTableFilter"></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/html" id="toolbarDemo">
+    <div class="layui-btn-container">
+        <button class="layui-btn layui-btn-normal layui-btn-sm" lay-event="add">
+            <i class="layui-icon layui-icon-add-circle"></i>提交报修
+        </button>
+    </div>
+</script>
+
+<script type="text/html" id="statusTpl">
+    {{# if(d.repStatus === 0){ }}
+        <span class="status-badge" style="background:#909399;color:#fff;">待指派</span>
+    {{# } else if(d.repStatus === 1){ }}
+        <span class="status-badge" style="background:#ff9800;color:#fff;">待接单</span>
+    {{# } else if(d.repStatus === 2){ }}
+        <span class="status-badge" style="background:#2196f3;color:#fff;">维修中</span>
+    {{# } else if(d.repStatus === 3){ }}
+        <span class="status-badge" style="background:#4caf50;color:#fff;">已完成</span>
+    {{# } else if(d.repStatus === 4){ }}
+        <span class="status-badge" style="background:#1b5e20;color:#fff;">已评价</span>
+    {{# } }}
+</script>
+
+<script type="text/html" id="urgencyTpl">
+    {{# if(d.urgency === 0){ }}
+        <span class="status-badge" style="background:#e6f7ff;color:#1890ff;border:1px solid #91d5ff;">普通</span>
+    {{# } else if(d.urgency === 1){ }}
+        <span class="status-badge" style="background:#fff7e6;color:#fa8c16;border:1px solid #ffd591;">紧急</span>
+    {{# } else if(d.urgency === 2){ }}
+        <span class="status-badge" style="background:#fff1f0;color:#f5222d;border:1px solid #ffa39e;">非常紧急</span>
+    {{# } }}
+</script>
+
+<script type="text/html" id="operateTpl">
+    <a class="layui-btn layui-btn-xs" lay-event="view">查看详情</a>
+    {{# if(d.repStatus === 3){ }}
+        <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="rate">评价</a>
+    {{# } }}
+</script>
+
+<script>
+    layui.use(['form', 'table', 'axios', 'layer', 'rate', 'miniPage'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            axios = layui.axios,
+            layer = layui.layer,
+            rate = layui.rate,
+            miniPage = layui.miniPage;
+
+        var currentWhere = {};
+
+        table.render({
+            elem: '#repairTable',
+            method: 'post',
+            url: API_BASE + '/repair/my_list',
+            toolbar: '#toolbarDemo',
+            defaultToolbar: ['filter', 'exports', 'print'],
+            cols: [[
+                {field: 'id', width: 80, title: 'ID', sort: true},
+                {field: 'repItem', title: '报修物品', width: 150},
+                {field: 'description', title: '描述', minWidth: 200, ellipsis: true},
+                {field: 'repStatus', title: '状态', width: 100, templet: '#statusTpl'},
+                {field: 'urgency', title: '紧急度', width: 100, templet: '#urgencyTpl'},
+                {field: 'repDate', title: '提交时间', width: 170},
+                {title: '操作', width: 180, toolbar: '#operateTpl', fixed: 'right'}
+            ]],
+            limits: [10, 15, 20, 30, 50],
+            limit: 10,
+            page: true,
+            skin: 'line',
+            even: true
+        });
+
+        form.on('submit(data-search-btn)', function (data) {
+            currentWhere = {};
+            if (data.field.repStatus !== '') currentWhere.repStatus = parseInt(data.field.repStatus);
+            if (data.field.urgency !== '') currentWhere.urgency = parseInt(data.field.urgency);
+            if (data.field.keyword !== '') currentWhere.keyword = data.field.keyword;
+            table.reload('repairTable', {
+                where: currentWhere,
+                page: {curr: 1}
+            }, 'data');
+            return false;
+        });
+
+        $('#resetBtn').on('click', function () {
+            setTimeout(function () {
+                currentWhere = {};
+                table.reload('repairTable', {
+                    where: {},
+                    page: {curr: 1}
+                }, 'data');
+            }, 50);
+        });
+
+        table.on('toolbar(repairTableFilter)', function (obj) {
+            if (obj.event === 'add') {
+                var content = miniPage.getHrefContent('student/repair-add.html');
+                var index = layer.open({
+                    title: '提交报修',
+                    type: 1,
+                    shade: 0.3,
+                    maxmin: true,
+                    shadeClose: true,
+                    area: ['700px', '650px'],
+                    content: content
+                });
+                $(window).on('resize', function () {
+                    layer.full(index);
+                });
+            }
+        });
+
+        table.on('tool(repairTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'view') {
+                showDetail(data);
+            } else if (obj.event === 'rate') {
+                showRateDialog(data);
+            }
+        });
+
+        function getStatusFullText(status) {
+            var map = {0:'待指派',1:'待接单',2:'维修中',3:'已完成',4:'已评价'};
+            return map[status] || '未知';
+        }
+
+        function getUrgencyFullText(urgency) {
+            var map = {0:'普通',1:'紧急',2:'非常紧急'};
+            return map[urgency] || '普通';
+        }
+
+        function showDetail(data) {
+            var imagesHtml = '';
+            if (data.images) {
+                var imgList = data.images.split(',').filter(function(img){return img.trim()!=='';});
+                if (imgList.length > 0) {
+                    imagesHtml += '<div class="detail-row"><span class="detail-label">报修图片：</span>';
+                    imgList.forEach(function(img){
+                        imagesHtml += '<img src="'+img+'" class="img-thumb" style="margin-right:8px;" onclick="window.open(\''+img+'\')">';
+                    });
+                    imagesHtml += '</div>';
+                }
+            }
+
+            var ratingHtml = '';
+            if (data.rating) {
+                ratingHtml = '<div class="detail-row"><span class="detail-label">服务评分：</span><span class="detail-value">';
+                for (var i=1;i<=5;i++) {
+                    ratingHtml += '<i class="fa fa-star" style="color:'+(i<=data.rating?'#ffb800':'#e0e0e0')+';"></i>';
+                }
+                ratingHtml += ' (' + data.rating + '星)</span></div>';
+            }
+            if (data.feedback) {
+                ratingHtml += '<div class="detail-row"><span class="detail-label">评价内容：</span><span class="detail-value">'+data.feedback+'</span></div>';
+            }
+
+            var html = '<div style="padding:20px;max-width:600px;">' +
+                '<div class="detail-row"><span class="detail-label">报修ID：</span><span class="detail-value">'+(data.id||'-')+'</span></div>' +
+                '<div class="detail-row"><span class="detail-label">报修物品：</span><span class="detail-value">'+(data.repItem||'-')+'</span></div>' +
+                '<div class="detail-row"><span class="detail-label">报修状态：</span><span class="detail-value">'+getStatusFullText(data.repStatus)+'</span></div>' +
+                '<div class="detail-row"><span class="detail-label">紧急程度：</span><span class="detail-value">'+getUrgencyFullText(data.urgency)+'</span></div>' +
+                '<div class="detail-row"><span class="detail-label">提交时间：</span><span class="detail-value">'+(data.repDate||'-')+'</span></div>' +
+                imagesHtml +
+                '<div class="detail-row"><span class="detail-label">详细描述：</span><div class="detail-value" style="display:inline-block;vertical-align:top;max-width:440px;word-break:break-all;">'+(data.description||'-')+'</div></div>' +
+                ratingHtml +
+                '</div>';
+            layer.open({
+                type: 1,
+                title: '报修详情',
+                area: ['650px', 'auto'],
+                shadeClose: true,
+                content: html
+            });
+        }
+
+        function showRateDialog(data) {
+            var rateValue = 0;
+            var html = '<div style="padding:25px;">' +
+                '<div class="layui-form-item">' +
+                '<label class="layui-form-label" style="width:80px;">服务评分<span class="rate-tips" id="rateText">请点击星星评分</span></label>' +
+                '<div class="layui-input-block" style="margin-left:100px;">' +
+                '<div id="rateIns"></div>' +
+                '</div>' +
+                '</div>' +
+                '<div class="layui-form-item layui-form-text">' +
+                '<label class="layui-form-label" style="width:80px;">评价内容</label>' +
+                '<div class="layui-input-block" style="margin-left:100px;">' +
+                '<textarea id="feedbackTxt" placeholder="请输入您的评价，帮助我们改进服务~" class="layui-textarea" style="min-height:100px;"></textarea>' +
+                '</div>' +
+                '</div>' +
+                '</div>';
+
+            var rateIndex = layer.open({
+                type: 1,
+                title: '评价报修 #' + data.id,
+                area: ['520px', 'auto'],
+                shadeClose: false,
+                content: html,
+                btn: ['提交评价', '取消'],
+                yes: function (index, layero) {
+                    var feedback = $('#feedbackTxt').val().trim();
+                    if (rateValue === 0) {
+                        layer.msg('请先选择评分星级', {icon: 2});
+                        return;
+                    }
+                    var loading = layer.load(2);
+                    axios.post('repair/rate', {
+                        id: data.id,
+                        rating: rateValue,
+                        feedback: feedback
+                    }).then(function (res) {
+                        layer.close(loading);
+                        if (res.code === 200) {
+                            layer.msg(res.msg || '评价成功', {icon: 1});
+                            layer.close(index);
+                            table.reload('repairTable');
+                        } else {
+                            layer.msg(res.msg || '评价失败', {icon: 2});
+                        }
+                    }).catch(function (err) {
+                        layer.close(loading);
+                        layer.msg('请求失败，请重试', {icon: 2});
+                    });
+                }
+            });
+
+            setTimeout(function () {
+                rate.render({
+                    elem: '#rateIns',
+                    value: 0,
+                    length: 5,
+                    theme: '#ffb800',
+                    choose: function (value) {
+                        rateValue = value;
+                        var textMap = {1:'非常不满意',2:'不满意',3:'一般',4:'满意',5:'非常满意'};
+                        $('#rateText').text(textMap[value] || '请点击星星评分');
+                    }
+                });
+            }, 100);
+        }
+
+        window.reload = function () {
+            table.reload('repairTable');
+        };
+    });
+</script>

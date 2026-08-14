@@ -1,0 +1,212 @@
+<style>
+    .order-list .layui-tab-card {border: none; box-shadow: none;}
+    .order-list .tab-filter {margin-bottom: 15px;}
+    .order-list .tab-filter .layui-tab-title {border-bottom: 1px solid #e6e6e6;}
+    .order-list .tab-filter .layui-this {border-bottom: 2px solid #1e9fff !important;}
+</style>
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main order-list">
+        <div class="layui-card">
+            <div class="layui-card-body" style="padding-bottom:0;">
+                <div class="layui-tab tab-filter" lay-filter="statusTab">
+                    <ul class="layui-tab-title">
+                        <li class="layui-this" data-status="">全部</li>
+                        <li data-status="1">待接单</li>
+                        <li data-status="2">维修中</li>
+                        <li data-status="3,4">已完成</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <table class="layui-hide" id="orderTableId" lay-filter="orderTableFilter"></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/html" id="completeFormTpl">
+    <form class="layui-form" style="padding:20px;" lay-filter="completeForm">
+        <div class="layui-form-item layui-form-text">
+            <label class="layui-form-label">维修记录</label>
+            <div class="layui-input-block">
+                <textarea name="repairRecord" placeholder="请输入维修记录..." class="layui-textarea" style="min-height:150px;"></textarea>
+            </div>
+        </div>
+        <div class="layui-form-item" style="text-align:center;">
+            <button type="button" class="layui-btn" lay-submit lay-filter="completeSubmit">提交</button>
+            <button type="button" class="layui-btn layui-btn-primary" onclick="layer.closeAll();">取消</button>
+        </div>
+    </form>
+</script>
+
+<script type="text/html" id="detailTpl">
+    <div style="padding:20px;">
+        <table class="layui-table" lay-skin="line">
+            <colgroup>
+                <col width="120">
+                <col>
+            </colgroup>
+            <tbody>
+                <tr><td>工单ID</td><td>{{d.id}}</td></tr>
+                <tr><td>报修物品</td><td>{{d.repItem}}</td></tr>
+                <tr><td>报修描述</td><td>{{d.description}}</td></tr>
+                <tr><td>紧急度</td><td>{{# if(d.urgency === 2){ }}<span class="layui-badge layui-bg-red">非常紧急</span>{{# } else if(d.urgency === 1){ }}<span class="layui-badge layui-bg-orange">紧急</span>{{# } else { }}<span class="layui-badge layui-bg-blue">普通</span>{{# } }}</td></tr>
+                <tr><td>学生</td><td>{{d.stuName || (d.user ? d.user.userName : '-')}}</td></tr>
+                <tr><td>楼栋</td><td>{{d.buildingName || (d.building ? d.building.buildingName : (d.buildingId ? d.buildingId + '栋' : '-'))}}</td></tr>
+                <tr><td>房间</td><td>{{d.roomName || (d.room ? d.room.brand : (d.roomId ? d.roomId + '室' : '-'))}}</td></tr>
+                <tr><td>状态</td><td>{{# if(d.repStatus === 0){ }}<span class="layui-badge layui-bg-gray">待指派</span>{{# } else if(d.repStatus === 1){ }}<span class="layui-badge layui-bg-orange">待接单</span>{{# } else if(d.repStatus === 2){ }}<span class="layui-badge layui-bg-blue">维修中</span>{{# } else if(d.repStatus === 3){ }}<span class="layui-badge layui-bg-green">已完成</span>{{# } else if(d.repStatus === 4){ }}<span class="layui-badge layui-bg-cyan">已评价</span>{{# } }}</td></tr>
+                <tr><td>提交时间</td><td>{{d.repDate}}</td></tr>
+                {{# if(d.repairRecord){ }}<tr><td>维修记录</td><td>{{d.repairRecord}}</td></tr>{{# } }}
+                {{# if(d.completedTime){ }}<tr><td>完成时间</td><td>{{d.completedTime}}</td></tr>{{# } }}
+                {{# if(d.feedback){ }}<tr><td>评价内容</td><td>{{d.feedback}}</td></tr>{{# } }}
+                {{# if(d.rating){ }}<tr><td>评价评分</td><td>{{d.rating}} 分</td></tr>{{# } }}
+            </tbody>
+        </table>
+    </div>
+</script>
+
+<script>
+    layui.use(['jquery', 'layer', 'table', 'element', 'form', 'axios', 'laytpl'], function () {
+        var $ = layui.jquery,
+            layer = layui.layer,
+            table = layui.table,
+            element = layui.element,
+            form = layui.form,
+            axios = layui.axios,
+            laytpl = layui.laytpl;
+
+        var currentStatus = '';
+
+        renderTable(currentStatus);
+
+        element.on('tab(statusTab)', function(data){
+            var status = $(this).attr('data-status') || '';
+            currentStatus = status;
+            renderTable(status);
+        });
+
+        function renderTable(status) {
+            var where = {page: 1, limit: 10};
+            if (status) {
+                where.repStatuses = status;
+            }
+            table.render({
+                elem: '#orderTableId',
+                method: 'post',
+                url: API_BASE + '/repair/my_orders',
+                where: where,
+                defaultToolbar: ['filter', 'exports', 'print'],
+                cols: [[
+                    {field: 'id', width: 80, title: 'ID', sort: true},
+                    {field: 'repItem', title: '报修物品', minWidth: 120},
+                    {field: 'description', title: '描述', minWidth: 200},
+                    {field: 'urgency', width: 100, title: '紧急度', templet: function(row) {
+                            if (row.urgency === 2) return '<span class="layui-badge layui-bg-red">非常紧急</span>';
+                            if (row.urgency === 1) return '<span class="layui-badge layui-bg-orange">紧急</span>';
+                            return '<span class="layui-badge layui-bg-blue">普通</span>';
+                        }},
+                    {field: 'stuName', width: 100, title: '学生', templet: function(row) {
+                            return row.stuName || (row.user ? row.user.userName : '-');
+                        }},
+                    {field: 'location', width: 140, title: '楼栋房间', templet: function(row) {
+                            var building = row.buildingName || (row.building ? row.building.buildingName : (row.buildingId ? row.buildingId + '栋' : ''));
+                            var room = row.roomName || (row.room ? row.room.brand : (row.roomId ? row.roomId + '室' : ''));
+                            return building + ' ' + room;
+                        }},
+                    {field: 'repStatus', width: 100, title: '状态', templet: function(row) {
+                            return getStatusBadge(row.repStatus);
+                        }},
+                    {field: 'repDate', width: 170, title: '提交时间', sort: true},
+                    {width: 160, title: '操作', toolbar: '#operBar', fixed: 'right'}
+                ]],
+                limits: [10, 15, 20, 30, 50, 100],
+                limit: 10,
+                page: true,
+                skin: 'line'
+            });
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 0: return '<span class="layui-badge layui-bg-gray">待指派</span>';
+                case 1: return '<span class="layui-badge layui-bg-orange">待接单</span>';
+                case 2: return '<span class="layui-badge layui-bg-blue">维修中</span>';
+                case 3: return '<span class="layui-badge layui-bg-green">已完成</span>';
+                case 4: return '<span class="layui-badge layui-bg-cyan">已评价</span>';
+                default: return '<span class="layui-badge">未知</span>';
+            }
+        }
+
+        table.on('tool(orderTableFilter)', function(obj) {
+            var data = obj.data;
+            if (obj.event === 'accept') {
+                layer.confirm('确认接此工单？', {icon: 3, title:'提示'}, function(index){
+                    axios.post('/repair/accept', {id: data.id}).then(function(res) {
+                        layer.msg(res.msg || '接单成功', {icon: 1});
+                        obj.update({repStatus: 2});
+                        renderTable(currentStatus);
+                    }).catch(function(err) {
+                        layer.msg(err.msg || '接单失败', {icon: 2});
+                    });
+                    layer.close(index);
+                });
+            } else if (obj.event === 'complete') {
+                var tpl = $('#completeFormTpl').html();
+                layer.open({
+                    type: 1,
+                    title: '完成维修 - 工单#' + data.id,
+                    area: ['550px', '400px'],
+                    content: tpl,
+                    success: function(layero, index) {
+                        form.render();
+                        form.on('submit(completeSubmit)', function(formData) {
+                            var repairRecord = formData.field.repairRecord;
+                            if (!repairRecord || repairRecord.trim() === '') {
+                                layer.msg('请填写维修记录', {icon: 2});
+                                return false;
+                            }
+                            var loading = layer.load(2);
+                            axios.post('/repair/complete', {id: data.id, repairRecord: repairRecord}).then(function(res) {
+                                layer.close(loading);
+                                layer.close(index);
+                                layer.msg(res.msg || '提交成功', {icon: 1});
+                                obj.update({repStatus: 3});
+                                renderTable(currentStatus);
+                            }).catch(function(err) {
+                                layer.close(loading);
+                                layer.msg(err.msg || '提交失败', {icon: 2});
+                            });
+                            return false;
+                        });
+                    }
+                });
+            } else if (obj.event === 'detail') {
+                var detailTpl = $('#detailTpl').html();
+                laytpl(detailTpl).render(data, function(html){
+                    layer.open({
+                        type: 1,
+                        title: '工单详情 - #' + data.id,
+                        area: ['700px', '550px'],
+                        content: html
+                    });
+                });
+            }
+        });
+
+        window.reloadTable = function () {
+            renderTable(currentStatus);
+        };
+    });
+</script>
+
+<script type="text/html" id="operBar">
+    {{# if(d.repStatus === 1){ }}
+        <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="accept">接单</a>
+    {{# } else if(d.repStatus === 2){ }}
+        <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="complete">完成维修</a>
+    {{# } }}
+    <a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="detail">查看详情</a>
+</script>

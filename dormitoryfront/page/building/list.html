@@ -1,0 +1,200 @@
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main">
+
+
+        <div style="margin: 10px 10px 10px 10px">
+            <form class="layui-form layui-form-pane" action="">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">楼栋编号</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="id" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-inline">
+                        <label class="layui-form-label">楼栋名称</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="buildingName" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+
+<!--                    <div class="layui-inline">-->
+<!--                        <label class="layui-form-label">用户类型</label>-->
+<!--                        <div class="layui-input-inline">-->
+<!--                            <input type="text" name="userType" autocomplete="off" class="layui-input">-->
+<!--                        </div>-->
+<!--                    </div>-->
+                    <div class="layui-inline">
+                        <button type="submit" class="layui-btn layui-btn-primary"  lay-submit lay-filter="data-search-btn"><i class="layui-icon"></i> 搜 索</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-normal layui-btn-sm data-add-btn" lay-event="add">
+                    <i class="layui-icon layui-icon-add-circle"></i>添加
+                </button>
+                <button class="layui-btn layui-btn-normal layui-btn-sm data-add-btn" lay-event="update">
+                    <i class="layui-icon layui-icon-edit"></i>修改
+                </button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger data-delete-btn" lay-event="delete">
+                    <i class="layui-icon layui-icon-delete"></i>删除
+                </button>
+            </div>
+        </script>
+
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+
+<!--        <script type="text/html" id="currentTableBar">-->
+<!--            <a class="layui-btn layui-btn-normal layui-btn-xs data-count-edit" lay-event="edit">编辑</a>-->
+<!--            <a class="layui-btn layui-btn-xs layui-btn-danger data-count-delete" lay-event="delete">删除</a>-->
+<!--        </script>-->
+
+    </div>
+</div>
+
+<script>
+    layui.use(['form', 'table','miniPage','miniAdmin','element'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            miniAdmin = layui.miniAdmin,
+            miniPage = layui.miniPage;
+
+        table.render({
+            elem: '#currentTableId',
+            method: 'post',
+            url: API_BASE + '/building/query',
+            toolbar: '#toolbarDemo',
+            defaultToolbar: ['filter', 'exports', 'print'],
+            cols: [[
+                {type: "checkbox", width: 50},
+                {field: 'id', width: 120, title: '楼栋编号', sort: true},
+                {field: 'buildingName', title: '楼栋名称'},
+                {field: 'floorNum', title: '总层数', sort: true, templet: function(row){
+                        return row.floorNum + '层';
+                    }
+                },
+                {field: 'liverGender', title: '学生性别', sort: true, templet:function (row) {
+                        if(row.liverGender === 0){
+                            return "<span class=\"layui-badge layui-bg-silk-pink\">女</span>";
+                        } else {
+                            return "<span class=\"layui-badge layui-bg-silk-blue\">男</span>";
+                        }
+                    }},
+                {field: 'managerId', title: '宿管员ID', minWidth: 150},
+
+                /**
+                 * @imp 获取用户姓名
+                 * @silkTag 楼栋->根据楼栋表管理员ID，查用户表对应的管理员名字
+                 */
+                {field: 'managerName', title: '宿管员姓名', templet:'<div>{{d.user.userName}}</div>'}
+            ]],
+            limits: [10, 15, 20, 30, 50, 100],
+            limit: 10,
+            page: true,
+            skin: 'line'
+        });
+
+        window.reload = function () {
+            table.reload('currentTableId');     // 刷新表格
+        }
+
+        // 监听搜索操作
+        form.on('submit(data-search-btn)', function (data) {
+            var result = JSON.stringify(data.field);
+
+            //执行搜索重载
+            table.reload('currentTableId', {
+                where: data.field
+            }, 'data');
+            return false;
+        });
+
+        /**
+         * toolbar事件监听
+         */
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'add') {                                          // 🌸监听添加操作
+                let content = miniPage.getHrefContent('building/add.html');     // ajax异步获取
+                let openWH = miniPage.getOpenWidthHeight();
+                let index = layer.open({
+                    title: '添加楼栋',
+                    type: 1,
+                    shade: 0.3,
+                    maxmin:true,                    // 显示最大最小化的按钮
+                    shadeClose: true,
+                    area: ['600px', '600px'],       // 原始值 area: [openWH[0] + 'px', openWH[1] + 'px'],
+                    offset: 'auto',                 // 原始值 offset: [openWH[2] + 'px', openWH[3] + 'px'],
+                    content: content,
+                });
+                $(window).on("resize", function () {
+                    layer.full(index);
+                });
+            } else if (obj.event === 'update') {                            // 🌸监听修改操作
+                let data = table.checkStatus('currentTableId').data;
+                if (data.length === 0){
+                    layer.msg("还没有选中数据");
+                } else if (data.length !== 1) {
+                    layer.msg("只能选择一条数据进行修改");
+                } else {
+                    let content = miniPage.getHrefContent('building/update.html');     // ajax异步获取
+                    let openWH = miniPage.getOpenWidthHeight();
+                    let index = layer.open({
+                        title: '编辑楼栋',
+                        type: 1,
+                        shade: 0.3,
+                        maxmin:true,                    // 显示最大最小化的按钮
+                        shadeClose: true,
+                        area: ['600px', '600px'],       // 原始值 area: [openWH[0] + 'px', openWH[1] + 'px'],
+                        offset: 'auto',                 // 原始值 offset: [openWH[2] + 'px', openWH[3] + 'px'],
+                        content: content,
+                    });
+                    setFormValue(data[0]);
+
+                    /**
+                     * @silkTag 为update页面的managerHiddenId赋值
+                     */
+                    $('#managerHiddenId').val(data[0].managerId);
+                    console.log(data[0]);
+                    $(window).on("resize", function () {
+                        layer.full(index);
+                    });
+                }
+            } else if (obj.event === 'delete') {                            // 🌸监听删除操作
+                let data = table.checkStatus('currentTableId').data;
+                if (data.length === 0){
+                    layer.msg("还没有选中数据");
+                } else{
+                    layer.confirm("真的要删除吗", function (index) {
+                        let arr = data.map(item=>item.id);                   // 异步删除(包括map, filter, some, every)
+
+                        axios.get('building/delete?ids=' + arr.join(",")).then(function (response) {
+                            table.reload('currentTableId');
+                            layer.msg(response.msg);
+                        }).catch(function (error) {
+                            layer.msg(error);
+                        });
+                        layer.close(index);
+                    })
+                }
+            }
+        });
+
+        function setFormValue(data) {               // 点击修改后，给表单赋值
+            form.val("updateForm", {
+                id: data.id,
+                buildingName: data.buildingName,
+                floorNum: data.floorNum,
+                liverGender: data.liverGender,
+                managerId: data.managerId,
+                managerName: data.managerName,
+            })
+        }
+
+    });
+</script>

@@ -1,0 +1,169 @@
+
+
+
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main">
+        <div style="margin: 10px 10px 10px 10px">
+            <form class="layui-form layui-form-pane" action="">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">学号</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="stuId" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-inline">
+                        <label class="layui-form-label">状态</label>
+                        <!--                        Todo: 在搜索框下面给个用户一个输入提示-->
+                        <!--                        <tip>未处理：0；已完成：1；假报修：2</tip>-->
+                        <div class="layui-input-inline">
+                            <input type="text" name="exStatus" autocomplete="off" class="layui-input">
+                        </div>
+                    </div>
+
+                    <div class="layui-inline">
+                        <button type="submit" class="layui-btn layui-btn-primary"  lay-submit lay-filter="data-search-btn"><i class="layui-icon"></i> 搜 索</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <script type="text/html" id="toolbarDemo">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-normal layui-btn-sm data-add-btn" lay-event="pass">
+                    <i class="layui-icon layui-icon-edit"></i>通过审核
+                </button>
+                <button class="layui-btn layui-btn-warm layui-btn-sm data-add-btn" lay-event="fail">
+                    <i class="layui-icon layui-icon-edit"></i>驳回审核
+                </button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger data-delete-btn" lay-event="delete">
+                    <i class="layui-icon layui-icon-delete"></i>删除
+                </button>
+            </div>
+        </script>
+
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+    </div>
+</div>
+
+
+<script>
+    layui.use(['form', 'table','miniPage','miniAdmin','element'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            miniAdmin = layui.miniAdmin,
+            miniPage = layui.miniPage;
+
+        table.render({
+            elem: '#currentTableId',
+            method: 'post',
+            url: API_BASE + '/exchange/query',
+            toolbar: '#toolbarDemo',
+            defaultToolbar: ['filter', 'exports', 'print'],
+            cols: [[
+                {type: "checkbox", width: 50},
+                {field: 'id', width: 100, title: 'ID', sort: true},
+                {field: 'stuId', width: 100, title: '学号'},
+                {field: 'stuId', width: 120, title:'申请人', templet:'<div>{{d.user.userName}}</div>'},         // 根据exchange表中的学生ID查user表中的学生姓名
+                {field: 'gender', width: 100, title: '性别', templet: function (row) {
+                        if (row.gender === 0){
+                            return '<span class="layui-badge layui-bg-silk-pink">女</span>';
+                        } else if (row.gender === 1){
+                            return '<span class="layui-badge layui-bg-silk-blue">男</span>';
+                        }
+                    }},
+                {field: 'buildingId', width: 120, title:'楼栋号', templet: function (row) {
+                        return row.buildingId + '栋';
+                    }},
+                // {field: 'buildingName', width: 120, title:'楼栋名', templet: '<div>{{d.building.buildingName}}</div>'},
+                {field: 'roomId', width: 120, title: '房间', templet:'<div>{{d.room.brand}}</div>'},
+                {field: 'exReason', title:'申请原因'},
+                {field: 'exIntention', title:'申请意向'},
+                {field: 'exDate', title:'申请日期'},
+                {field: 'exStatus', width: 120, title: '申请状态', sort: true, templet: function (row) {
+                        if (row.exStatus === 0){
+                            return '<span class="layui-badge layui-bg-silk-silver">审核中⏳</span>';
+                        } else if (row.exStatus === 1){
+                            return '<span class="layui-badge layui-bg-silk-yellowgreen">已通过✨</span>';
+                        } else if (row.exStatus === 2){
+                            return '<span class="layui-badge layui-bg-orange">未通过😩</span>';
+                        }
+                    }}
+            ]],
+            limits: [10, 15, 20, 30, 50, 100],
+            limit: 10,
+            page: true,
+            skin: 'line'
+        });
+
+
+        window.reload = function () {
+            table.reload('currentTableId');     // 刷新表格
+        }
+
+
+        // 监听搜索操作
+        form.on('submit(data-search-btn)', function (data) {
+            var result = JSON.stringify(data.field);
+
+
+            //执行搜索重载
+            table.reload('currentTableId', {
+                where: data.field
+            }, 'data');
+
+            return false;
+        });
+
+        /**
+         * toolbar事件监听
+         */
+        table.on('toolbar(currentTableFilter)', function (obj) {
+            if (obj.event === 'pass') {                            // 🌸监听修改操作(将状态更改为已完成维修)
+                let data = table.checkStatus('currentTableId').data;
+                if (data.length === 0){
+                    layer.msg("还没有选中数据");
+                } else if (data.length !== 1) {
+                    layer.msg("只能选择一条数据进行修改");
+                } else {
+                    axios.post('exchange/update', {id:data[0].id, exStatus:1}).then(function (response) {
+                        layer.msg(response.msg);
+                        table.reload('currentTableId');                       // 重新加载表格
+                    });
+                }
+            } else if (obj.event === 'fail') {                            // 🌸监听修改操作(将状态更改为虚假报修)
+                let data = table.checkStatus('currentTableId').data;
+                if (data.length === 0){
+                    layer.msg("还没有选中数据");
+                } else if (data.length !== 1) {
+                    layer.msg("只能选择一条数据进行修改");
+                } else {
+                    axios.post('exchange/update', {id:data[0].id, exStatus:2}).then(function (response) {
+                        layer.msg(response.msg);
+                        table.reload('currentTableId');                      // 重新加载表格
+                    });
+                }
+            } else if (obj.event === 'delete') {                            // 🌸监听修改操作
+                let data = table.checkStatus('currentTableId').data;
+                if (data.length === 0){
+                    layer.msg("还没有选中数据");
+                } else{
+                    layer.confirm("真的要删除吗", function (index) {
+                        let arr = data.map(item=>item.id);                   // 异步删除(包括map, filter, some, every)
+
+                        axios.get('exchange/delete?ids=' + arr.join(",")).then(function (response) {
+                            table.reload('currentTableId');
+                            layer.msg(response.msg);
+                        }).catch(function (error) {
+                            layer.msg(error);
+                        });
+                        layer.close(index);
+                    })
+                }
+            }
+        });
+
+    });
+</script>

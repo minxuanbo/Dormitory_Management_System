@@ -1,0 +1,214 @@
+<style>
+    .student-dashboard .layui-card {border:1px solid #f2f2f2;border-radius:5px;}
+    .student-dashboard .stat-card {padding:20px;border-radius:8px;color:#fff;position:relative;overflow:hidden;}
+    .student-dashboard .stat-card .stat-icon {position:absolute;right:15px;top:15px;font-size:50px;opacity:0.3;}
+    .student-dashboard .stat-card .stat-title {font-size:14px;opacity:0.9;margin-bottom:10px;}
+    .student-dashboard .stat-card .stat-number {font-size:32px;font-weight:bold;margin-bottom:5px;}
+    .student-dashboard .stat-card .stat-label {font-size:12px;opacity:0.8;}
+    .student-dashboard .stat-total {background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);}
+    .student-dashboard .stat-pending {background:linear-gradient(135deg,#f093fb 0%,#f5576c 100%);}
+    .student-dashboard .stat-processing {background:linear-gradient(135deg,#4facfe 0%,#00f2fe 100%);}
+    .student-dashboard .stat-done {background:linear-gradient(135deg,#43e97b 0%,#38f9d7 100%);}
+    .student-dashboard .quick-btn {display:block;padding:20px;text-align:center;border-radius:8px;background:#f8f9fa;transition:all 0.3s;color:#333;}
+    .student-dashboard .quick-btn:hover {background:#e9ecef;transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.1);}
+    .student-dashboard .quick-btn i {font-size:30px;margin-bottom:8px;display:block;color:#1e9fff;}
+    .student-dashboard .status-badge {display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;}
+</style>
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main student-dashboard">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md12">
+                <div class="layui-card">
+                    <div class="layui-card-header" style="font-weight:bold;font-size:16px;">
+                        <i class="fa fa-home" style="color:#1e9fff;margin-right:8px;"></i>学生工作台
+                    </div>
+                    <div class="layui-card-body">
+                        <div class="layui-row layui-col-space15">
+                            <div class="layui-col-xs6 layui-col-sm3">
+                                <div class="stat-card stat-total">
+                                    <i class="fa fa-clipboard stat-icon"></i>
+                                    <div class="stat-title">报修总数</div>
+                                    <div class="stat-number" id="statTotal">0</div>
+                                    <div class="stat-label">累计提交报修单</div>
+                                </div>
+                            </div>
+                            <div class="layui-col-xs6 layui-col-sm3">
+                                <div class="stat-card stat-pending">
+                                    <i class="fa fa-clock-o stat-icon"></i>
+                                    <div class="stat-title">待处理</div>
+                                    <div class="stat-number" id="statPending">0</div>
+                                    <div class="stat-label">等待受理中</div>
+                                </div>
+                            </div>
+                            <div class="layui-col-xs6 layui-col-sm3">
+                                <div class="stat-card stat-processing">
+                                    <i class="fa fa-wrench stat-icon"></i>
+                                    <div class="stat-title">处理中</div>
+                                    <div class="stat-number" id="statProcessing">0</div>
+                                    <div class="stat-label">维修进行中</div>
+                                </div>
+                            </div>
+                            <div class="layui-col-xs6 layui-col-sm3">
+                                <div class="stat-card stat-done">
+                                    <i class="fa fa-check-circle stat-icon"></i>
+                                    <div class="stat-title">已完成</div>
+                                    <div class="stat-number" id="statDone">0</div>
+                                    <div class="stat-label">已完成维修</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="layui-row layui-col-space15" style="margin-top:15px;">
+            <div class="layui-col-md8">
+                <div class="layui-card">
+                    <div class="layui-card-header" style="font-weight:bold;">
+                        <i class="fa fa-list-alt" style="color:#1e9fff;margin-right:8px;"></i>最新报修
+                        <span class="layui-badge layui-bg-blue" style="margin-left:8px;">最近记录</span>
+                    </div>
+                    <div class="layui-card-body">
+                        <table class="layui-hide" id="recentRepairTable" lay-filter="recentRepairFilter"></table>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md4">
+                <div class="layui-card">
+                    <div class="layui-card-header" style="font-weight:bold;">
+                        <i class="fa fa-bolt" style="color:#ffb800;margin-right:8px;"></i>快捷操作
+                    </div>
+                    <div class="layui-card-body">
+                        <div class="layui-row layui-col-space10">
+                            <div class="layui-col-xs6">
+                                <a href="javascript:;" class="quick-btn" id="quickAdd">
+                                    <i class="fa fa-plus-square"></i>
+                                    <span>提交报修</span>
+                                </a>
+                            </div>
+                            <div class="layui-col-xs6">
+                                <a href="javascript:;" class="quick-btn" id="quickList">
+                                    <i class="fa fa-list"></i>
+                                    <span>报修列表</span>
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="layui-card" style="margin-top:15px;">
+                    <div class="layui-card-header" style="font-weight:bold;">
+                        <i class="fa fa-lightbulb-o" style="color:#ff5722;margin-right:8px;"></i>温馨提示
+                    </div>
+                    <div class="layui-card-body layui-text" style="color:#666;line-height:24px;font-size:13px;">
+                        <ul style="padding-left:18px;">
+                            <li style="margin-bottom:8px;">紧急报修请标注"非常紧急"，我们将优先处理</li>
+                            <li style="margin-bottom:8px;">提交报修后请保持电话畅通，方便维修人员联系</li>
+                            <li style="margin-bottom:8px;">维修完成后记得评价，您的反馈是我们前进的动力</li>
+                            <li>如有疑问请联系宿舍管理员</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['table', 'axios', 'miniAdmin', 'miniPage', 'layer', 'element'], function () {
+        var $ = layui.jquery,
+            table = layui.table,
+            axios = layui.axios,
+            miniPage = layui.miniPage,
+            layer = layui.layer;
+
+        function getStatusText(status) {
+            var map = {
+                0: '<span class="status-badge" style="background:#999;color:#fff;">待指派</span>',
+                1: '<span class="status-badge" style="background:#ffb800;color:#fff;">待接单</span>',
+                2: '<span class="status-badge" style="background:#1e9fff;color:#fff;">维修中</span>',
+                3: '<span class="status-badge" style="background:#5FB878;color:#fff;">已完成</span>',
+                4: '<span class="status-badge" style="background:#2d6a4f;color:#fff;">已评价</span>'
+            };
+            return map[status] || '未知';
+        }
+
+        function getUrgencyText(urgency) {
+            var map = {
+                0: '<span class="status-badge" style="background:#e6f7ff;color:#1890ff;">普通</span>',
+                1: '<span class="status-badge" style="background:#fff7e6;color:#fa8c16;">紧急</span>',
+                2: '<span class="status-badge" style="background:#fff1f0;color:#f5222d;">非常紧急</span>'
+            };
+            return map[urgency] || '普通';
+        }
+
+        function loadStatistics() {
+            axios.post('/repair/my_list', {page: 1, limit: 1000}).then(function (res) {
+                if (res.code === 200) {
+                    var data = res.data || [];
+                    var total = data.length;
+                    var pending = 0, processing = 0, done = 0;
+                    data.forEach(function (item) {
+                        var status = item.repStatus;
+                        if (status === 0 || status === 1) pending++;
+                        else if (status === 2) processing++;
+                        else if (status === 3 || status === 4) done++;
+                    });
+                    $('#statTotal').text(total);
+                    $('#statPending').text(pending);
+                    $('#statProcessing').text(processing);
+                    $('#statDone').text(done);
+                }
+            }).catch(function () {});
+        }
+
+        table.render({
+            elem: '#recentRepairTable',
+            method: 'post',
+            url: API_BASE + '/repair/my_list',
+            where: {page: 1, limit: 5},
+            parseData: function (res) {
+                var list = res.data || res.list || [];
+                return {
+                    code: res.code,
+                    msg: res.msg,
+                    count: list.length,
+                    data: list.slice(0, 5)
+                };
+            },
+            cols: [[
+                {field: 'id', width: 80, title: 'ID', sort: true},
+                {field: 'repItem', title: '报修物品'},
+                {field: 'repStatus', title: '状态', width: 100, templet: function (d) {
+                    return getStatusText(d.repStatus);
+                }},
+                {field: 'urgency', title: '紧急度', width: 100, templet: function (d) {
+                    return getUrgencyText(d.urgency);
+                }},
+                {field: 'repDate', title: '提交时间', width: 160}
+            ]],
+            page: false,
+            skin: 'line',
+            even: true,
+            done: function (res, curr, count) {
+                if (count === 0) {
+                    $('.layui-table-main').html('<div style="text-align:center;padding:40px;color:#999;"><i class="fa fa-inbox" style="font-size:48px;display:block;margin-bottom:10px;"></i>暂无报修记录</div>');
+                }
+            }
+        });
+
+        $('#quickAdd').on('click', function () {
+            window.parent && window.parent.layui && window.parent.layui.miniPage ?
+                window.parent.layui.miniPage.openNewTab('提交报修', 'student/repair-add.html') :
+                location.href = 'student/repair-add.html';
+        });
+
+        $('#quickList').on('click', function () {
+            window.parent && window.parent.layui && window.parent.layui.miniPage ?
+                window.parent.layui.miniPage.openNewTab('报修列表', 'student/repair-list.html') :
+                location.href = 'student/repair-list.html';
+        });
+
+        loadStatistics();
+    });
+</script>

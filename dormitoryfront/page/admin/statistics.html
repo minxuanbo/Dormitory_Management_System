@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>数据统计</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="../../lib/layui-v2.5.5/css/layui.css" media="all">
+    <link rel="stylesheet" href="../../css/public.css" media="all">
+</head>
+<body>
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md6">
+                <div class="layui-card">
+                    <div class="layui-card-header"><i class="fa fa-pie-chart" style="margin-right:10px;color:#1e9fff;"></i>工单状态分布（饼图）</div>
+                    <div class="layui-card-body">
+                        <div id="statusPieChart" style="width:100%;height:380px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md6">
+                <div class="layui-card">
+                    <div class="layui-card-header"><i class="fa fa-pie-chart" style="margin-right:10px;color:#ffb800;"></i>紧急度分布（饼图）</div>
+                    <div class="layui-card-body">
+                        <div id="urgencyPieChart" style="width:100%;height:380px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md6">
+                <div class="layui-card">
+                    <div class="layui-card-header"><i class="fa fa-bar-chart" style="margin-right:10px;color:#16baaa;"></i>工单状态统计（柱状图）</div>
+                    <div class="layui-card-body">
+                        <div id="statusBarChart" style="width:100%;height:380px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md6">
+                <div class="layui-card">
+                    <div class="layui-card-header"><i class="fa fa-line-chart" style="margin-right:10px;color:#ff5722;"></i>近7日工单趋势（折线图）</div>
+                    <div class="layui-card-body">
+                        <div id="trendLineChart" style="width:100%;height:380px;"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../../lib/layui-v2.5.5/layui.js" charset="utf-8"></script>
+<script src="../../js/lay-config.js" charset="utf-8"></script>
+<script>
+    layui.use(['jquery', 'layer', 'axios', 'echarts'], function () {
+        var $ = layui.jquery,
+            layer = layui.layer,
+            axios = layui.axios,
+            echarts = layui.echarts;
+
+        var statusPieChart = echarts.init(document.getElementById('statusPieChart'));
+        var urgencyPieChart = echarts.init(document.getElementById('urgencyPieChart'));
+        var statusBarChart = echarts.init(document.getElementById('statusBarChart'));
+        var trendLineChart = echarts.init(document.getElementById('trendLineChart'));
+
+        function getDefaultStatusPieOption() {
+            return {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    top: 'center'
+                },
+                series: [
+                    {
+                        name: '工单状态',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['60%', '50%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: true,
+                            formatter: '{b}\n{d}%'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: 16,
+                                fontWeight: 'bold'
+                            }
+                        },
+                        data: [
+                            {value: 0, name: '待指派', itemStyle: {color: '#c2c2c2'}},
+                            {value: 0, name: '处理中', itemStyle: {color: '#ffb800'}},
+                            {value: 0, name: '已完成', itemStyle: {color: '#5fb878'}},
+                            {value: 0, name: '已评价', itemStyle: {color: '#1e9fff'}}
+                        ]
+                    }
+                ]
+            };
+        }
+
+        function getDefaultUrgencyPieOption() {
+            return {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    top: 'center'
+                },
+                series: [
+                    {
+                        name: '紧急度',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['60%', '50%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: true,
+                            formatter: '{b}\n{d}%'
+                        },
+                        emphasis: {
+                            label: {
+                                show: true,
+                                fontSize: 16,
+                                fontWeight: 'bold'
+                            }
+                        },
+                        data: [
+                            {value: 0, name: '普通', itemStyle: {color: '#16baaa'}},
+                            {value: 0, name: '紧急', itemStyle: {color: '#ffb800'}},
+                            {value: 0, name: '非常紧急', itemStyle: {color: '#ff5722'}}
+                        ]
+                    }
+                ]
+            };
+        }
+
+        function getDefaultStatusBarOption() {
+            return {
+                tooltip: {
+                    trigger: 'axis',
+                    axisPointer: {
+                        type: 'shadow'
+                    }
+                },
+                legend: {
+                    data: ['工单数量']
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    data: ['待指派', '处理中', '已完成', '已评价'],
+                    axisLabel: {
+                        interval: 0
+                    }
+                },
+                yAxis: {
+                    type: 'value',
+                    minInterval: 1
+                },
+                series: [
+                    {
+                        name: '工单数量',
+                        type: 'bar',
+                        barWidth: '40%',
+                        data: [0, 0, 0, 0],
+                        itemStyle: {
+                            color: function (params) {
+                                var colorList = ['#c2c2c2', '#ffb800', '#5fb878', '#1e9fff'];
+                                return colorList[params.dataIndex];
+                            },
+                            borderRadius: [6, 6, 0, 0]
+                        },
+                        label: {
+                            show: true,
+                            position: 'top'
+                        }
+                    }
+                ]
+            };
+        }
+
+        function getDefaultTrendLineOption() {
+            var days = [];
+            var today = new Date();
+            for (var i = 6; i >= 0; i--) {
+                var d = new Date(today);
+                d.setDate(d.getDate() - i);
+                var month = d.getMonth() + 1;
+                var day = d.getDate();
+                days.push(month + '/' + day);
+            }
+            return {
+                tooltip: {
+                    trigger: 'axis'
+                },
+                legend: {
+                    data: ['新增工单', '完成工单']
+                },
+                grid: {
+                    left: '3%',
+                    right: '4%',
+                    bottom: '3%',
+                    containLabel: true
+                },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: days
+                },
+                yAxis: {
+                    type: 'value',
+                    minInterval: 1
+                },
+                series: [
+                    {
+                        name: '新增工单',
+                        type: 'line',
+                        stack: 'Total',
+                        smooth: true,
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        itemStyle: {
+                            color: '#1e9fff'
+                        },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                {offset: 0, color: 'rgba(30,159,255,0.5)'},
+                                {offset: 1, color: 'rgba(30,159,255,0.05)'}
+                            ])
+                        }
+                    },
+                    {
+                        name: '完成工单',
+                        type: 'line',
+                        stack: 'Total2',
+                        smooth: true,
+                        data: [0, 0, 0, 0, 0, 0, 0],
+                        itemStyle: {
+                            color: '#5fb878'
+                        },
+                        areaStyle: {
+                            color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                {offset: 0, color: 'rgba(95,184,120,0.5)'},
+                                {offset: 1, color: 'rgba(95,184,120,0.05)'}
+                            ])
+                        }
+                    }
+                ]
+            };
+        }
+
+        statusPieChart.setOption(getDefaultStatusPieOption());
+        urgencyPieChart.setOption(getDefaultUrgencyPieOption());
+        statusBarChart.setOption(getDefaultStatusBarOption());
+        trendLineChart.setOption(getDefaultTrendLineOption());
+
+        axios.post('/repair/statistics').then(function (res) {
+            var data = res.data || res;
+
+            var statusPieOpt = getDefaultStatusPieOption();
+            if (data.statusPieData && Array.isArray(data.statusPieData)) {
+                statusPieOpt.series[0].data = data.statusPieData;
+            } else {
+                statusPieOpt.series[0].data = [
+                    {value: data.pendingCount || 0, name: '待指派', itemStyle: {color: '#c2c2c2'}},
+                    {value: data.processingCount || 0, name: '处理中', itemStyle: {color: '#ffb800'}},
+                    {value: data.completedCount || 0, name: '已完成', itemStyle: {color: '#5fb878'}},
+                    {value: data.reviewedCount || 0, name: '已评价', itemStyle: {color: '#1e9fff'}}
+                ];
+            }
+            statusPieChart.setOption(statusPieOpt);
+
+            var urgencyPieOpt = getDefaultUrgencyPieOption();
+            if (data.urgencyPieData && Array.isArray(data.urgencyPieData)) {
+                urgencyPieOpt.series[0].data = data.urgencyPieData;
+            } else {
+                urgencyPieOpt.series[0].data = [
+                    {value: data.normalCount || data.urgency0 || 0, name: '普通', itemStyle: {color: '#16baaa'}},
+                    {value: data.urgentCount || data.urgency1 || 0, name: '紧急', itemStyle: {color: '#ffb800'}},
+                    {value: data.veryUrgentCount || data.urgency2 || 0, name: '非常紧急', itemStyle: {color: '#ff5722'}}
+                ];
+            }
+            urgencyPieChart.setOption(urgencyPieOpt);
+
+            var statusBarOpt = getDefaultStatusBarOption();
+            if (data.statusBarData && Array.isArray(data.statusBarData)) {
+                statusBarOpt.series[0].data = data.statusBarData;
+            } else {
+                statusBarOpt.series[0].data = [
+                    data.pendingCount || 0,
+                    data.processingCount || 0,
+                    data.completedCount || 0,
+                    data.reviewedCount || 0
+                ];
+            }
+            statusBarChart.setOption(statusBarOpt);
+
+            var trendLineOpt = getDefaultTrendLineOption();
+            if (data.trendDates && Array.isArray(data.trendDates)) {
+                trendLineOpt.xAxis.data = data.trendDates;
+            }
+            if (data.trendNewData && Array.isArray(data.trendNewData)) {
+                trendLineOpt.series[0].data = data.trendNewData;
+            } else if (data.last7DaysNew && Array.isArray(data.last7DaysNew)) {
+                trendLineOpt.series[0].data = data.last7DaysNew;
+            }
+            if (data.trendDoneData && Array.isArray(data.trendDoneData)) {
+                trendLineOpt.series[1].data = data.trendDoneData;
+            } else if (data.last7DaysDone && Array.isArray(data.last7DaysDone)) {
+                trendLineOpt.series[1].data = data.last7DaysDone;
+            }
+            trendLineChart.setOption(trendLineOpt);
+
+        }).catch(function () {
+            layer.msg('统计数据加载失败', {icon: 2});
+        });
+
+        window.onresize = function () {
+            statusPieChart.resize();
+            urgencyPieChart.resize();
+            statusBarChart.resize();
+            trendLineChart.resize();
+        };
+    });
+</script>
+</body>
+</html>

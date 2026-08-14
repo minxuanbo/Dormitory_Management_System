@@ -1,0 +1,202 @@
+<style>
+    .dashboard .layui-card {border:1px solid #f2f2f2;border-radius:5px;}
+    .dashboard .icon {margin-right:10px;}
+    .dashboard .stat-card .layui-card-body {padding:20px;}
+    .dashboard .stat-card .stat-icon {
+        display:inline-block;
+        width:60px;
+        height:60px;
+        line-height:60px;
+        text-align:center;
+        border-radius:8px;
+        font-size:28px;
+        color:#fff;
+        float:left;
+    }
+    .dashboard .stat-card .stat-info {margin-left:80px;padding-top:5px;}
+    .dashboard .stat-card .stat-info .stat-num {font-size:28px;font-weight:bold;color:#333;line-height:1.2;}
+    .dashboard .stat-card .stat-info .stat-label {font-size:14px;color:#999;margin-top:8px;}
+    .dashboard .icon-wait {background-color:#ffb800;}
+    .dashboard .icon-doing {background-color:#1e9fff;}
+    .dashboard .icon-done {background-color:#1aa094;}
+    .dashboard .icon-today {background-color:#ff5722;}
+</style>
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main dashboard">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md12">
+                <div class="layui-row layui-col-space15">
+                    <div class="layui-col-md3">
+                        <div class="layui-card stat-card">
+                            <div class="layui-card-body">
+                                <div class="stat-icon icon-wait">
+                                    <i class="fa fa-clock-o"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-num" id="waitCount">0</div>
+                                    <div class="stat-label">待接单</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md3">
+                        <div class="layui-card stat-card">
+                            <div class="layui-card-body">
+                                <div class="stat-icon icon-doing">
+                                    <i class="fa fa-wrench"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-num" id="doingCount">0</div>
+                                    <div class="stat-label">维修中</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md3">
+                        <div class="layui-card stat-card">
+                            <div class="layui-card-body">
+                                <div class="stat-icon icon-done">
+                                    <i class="fa fa-check-circle"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-num" id="doneCount">0</div>
+                                    <div class="stat-label">已完成</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="layui-col-md3">
+                        <div class="layui-card stat-card">
+                            <div class="layui-card-body">
+                                <div class="stat-icon icon-today">
+                                    <i class="fa fa-calendar-check-o"></i>
+                                </div>
+                                <div class="stat-info">
+                                    <div class="stat-num" id="todayCount">0</div>
+                                    <div class="stat-label">今日完成</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-col-md12">
+                <div class="layui-card">
+                    <div class="layui-card-header">
+                        <i class="fa fa-list-alt icon" style="color:#1e9fff;"></i>最新工单
+                        <span class="layui-btn layui-btn-sm layui-btn-normal" style="float:right;" onclick="goOrderList()">
+                            <i class="fa fa-list"></i> 查看全部
+                        </span>
+                    </div>
+                    <div class="layui-card-body">
+                        <table class="layui-hide" id="latestOrderTable" lay-filter="latestOrderFilter"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['jquery', 'layer', 'table', 'axios', 'element'], function () {
+        var $ = layui.jquery,
+            layer = layui.layer,
+            table = layui.table,
+            axios = layui.axios,
+            element = layui.element;
+
+        loadStatistics();
+        loadLatestOrders();
+
+        function loadStatistics() {
+            axios.post('/repair/my_orders', {page: 1, limit: 1000}).then(function (res) {
+                var data = res.data || [];
+                var waitCount = 0;
+                var doingCount = 0;
+                var doneCount = 0;
+                var todayCount = 0;
+                var today = new Date();
+                today.setHours(0,0,0,0);
+
+                data.forEach(function(item) {
+                    if (item.repStatus === 1) waitCount++;
+                    if (item.repStatus === 2) doingCount++;
+                    if (item.repStatus === 3 || item.repStatus === 4) {
+                        doneCount++;
+                        var completeTime = item.completedTime;
+                        if (completeTime) {
+                            var d = new Date(completeTime);
+                            if (d >= today) todayCount++;
+                        }
+                    }
+                });
+
+                $('#waitCount').text(waitCount);
+                $('#doingCount').text(doingCount);
+                $('#doneCount').text(doneCount);
+                $('#todayCount').text(todayCount);
+            }).catch(function () {
+                $('#waitCount').text(0);
+                $('#doingCount').text(0);
+                $('#doneCount').text(0);
+                $('#todayCount').text(0);
+            });
+        }
+
+        function loadLatestOrders() {
+            table.render({
+                elem: '#latestOrderTable',
+                method: 'post',
+                url: API_BASE + '/repair/my_orders',
+                where: {page: 1, limit: 8},
+                cols: [[
+                    {field: 'id', width: 80, title: 'ID', sort: true},
+                    {field: 'repItem', title: '报修物品', minWidth: 120},
+                    {field: 'description', title: '描述', minWidth: 200},
+                    {field: 'urgency', width: 100, title: '紧急度', templet: function(row) {
+                            if (row.urgency === 2) return '<span class="layui-badge layui-bg-red">非常紧急</span>';
+                            if (row.urgency === 1) return '<span class="layui-badge layui-bg-orange">紧急</span>';
+                            return '<span class="layui-badge layui-bg-blue">普通</span>';
+                        }},
+                    {field: 'buildingName', width: 130, title: '楼栋房间', templet: function(row) {
+                            var building = row.building ? row.building.buildingName : (row.buildingId ? row.buildingId + '栋' : '');
+                            var room = row.room ? row.room.brand : (row.roomId ? row.roomId + '室' : '');
+                            return building + (room ? ' ' + room : '');
+                        }},
+                    {field: 'repStatus', width: 100, title: '状态', templet: function(row) {
+                            return getStatusBadge(row.repStatus);
+                        }},
+                    {field: 'repDate', width: 170, title: '提交时间', sort: true}
+                ]],
+                limits: [8],
+                limit: 8,
+                page: false,
+                skin: 'line',
+                done: function(res) {
+                    if (!res.data || res.data.length === 0) {
+                        $('.layui-table-main').html('<div style="text-align:center;padding:40px;color:#999;">暂无工单数据</div>');
+                    }
+                }
+            });
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 0: return '<span class="layui-badge layui-bg-gray">待指派</span>';
+                case 1: return '<span class="layui-badge layui-bg-orange">待接单</span>';
+                case 2: return '<span class="layui-badge layui-bg-blue">维修中</span>';
+                case 3: return '<span class="layui-badge layui-bg-green">已完成</span>';
+                case 4: return '<span class="layui-badge layui-bg-cyan">已评价</span>';
+                default: return '<span class="layui-badge">未知</span>';
+            }
+        }
+
+        window.goOrderList = function() {
+            parent.layui.index && parent.layui.index.openTabsPage('repairer/order-list.html', '我的工单');
+        };
+
+        table.on('tool(latestOrderFilter)', function(obj) {
+        });
+    });
+</script>

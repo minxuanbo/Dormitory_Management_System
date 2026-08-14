@@ -1,0 +1,428 @@
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main">
+        <div style="margin: 10px 10px 10px 10px">
+            <form class="layui-form layui-form-pane" action="">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">状态</label>
+                        <div class="layui-input-inline">
+                            <select name="repStatus">
+                                <option value="">全部状态</option>
+                                <option value="0">待指派</option>
+                                <option value="1">待接单</option>
+                                <option value="2">维修中</option>
+                                <option value="3">已完成</option>
+                                <option value="4">已评价</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="layui-inline">
+                        <label class="layui-form-label">紧急度</label>
+                        <div class="layui-input-inline">
+                            <select name="urgency">
+                                <option value="">全部紧急度</option>
+                                <option value="0">普通</option>
+                                <option value="1">紧急</option>
+                                <option value="2">非常紧急</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="layui-inline">
+                        <label class="layui-form-label">报修物品</label>
+                        <div class="layui-input-inline">
+                            <input type="text" name="repItem" autocomplete="off" class="layui-input" placeholder="请输入报修物品关键词">
+                        </div>
+                    </div>
+
+                    <div class="layui-inline">
+                        <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="data-search-btn"><i class="layui-icon"></i> 搜 索</button>
+                        <button type="reset" class="layui-btn layui-btn-primary"><i class="layui-icon">ဂ</i> 重 置</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <table class="layui-hide" id="currentTableId" lay-filter="currentTableFilter"></table>
+
+        <script type="text/html" id="currentTableBar">
+            {{# if(d.repStatus === 0){ }}
+            <a class="layui-btn layui-btn-normal layui-btn-xs" lay-event="assign"><i class="layui-icon layui-icon-user"></i> 指派</a>
+            {{# } }}
+            <a class="layui-btn layui-btn-warm layui-btn-xs" lay-event="setUrgency"><i class="layui-icon layui-icon-fire"></i> 设置紧急度</a>
+            <a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="detail"><i class="layui-icon layui-icon-about"></i> 查看详情</a>
+        </script>
+    </div>
+</div>
+
+<script type="text/html" id="assignFormTpl">
+    <div style="padding:20px;">
+        <form class="layui-form" lay-filter="assignForm">
+            <input type="hidden" name="id">
+            <div class="layui-form-item">
+                <label class="layui-form-label">工单ID</label>
+                <div class="layui-input-block">
+                    <input type="text" id="assignRepairId" disabled class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">报修物品</label>
+                <div class="layui-input-block">
+                    <input type="text" id="assignRepItem" disabled class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label"><span style="color:red;">*</span>维修人员</label>
+                <div class="layui-input-block">
+                    <select name="repairerId" lay-verify="required" id="repairerSelect">
+                        <option value="">请选择维修人员</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item" style="text-align:center;margin-top:20px;">
+                <button class="layui-btn" lay-submit lay-filter="assignSubmitBtn">确认指派</button>
+                <button type="button" class="layui-btn layui-btn-primary" id="assignCancelBtn">取消</button>
+            </div>
+        </form>
+    </div>
+</script>
+
+<script type="text/html" id="urgencyFormTpl">
+    <div style="padding:20px;">
+        <form class="layui-form" lay-filter="urgencyForm">
+            <input type="hidden" name="id">
+            <div class="layui-form-item">
+                <label class="layui-form-label">工单ID</label>
+                <div class="layui-input-block">
+                    <input type="text" id="urgencyRepairId" disabled class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">报修物品</label>
+                <div class="layui-input-block">
+                    <input type="text" id="urgencyRepItem" disabled class="layui-input">
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label"><span style="color:red;">*</span>紧急度</label>
+                <div class="layui-input-block">
+                    <select name="urgency" lay-verify="required">
+                        <option value="0">普通</option>
+                        <option value="1">紧急</option>
+                        <option value="2">非常紧急</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item" style="text-align:center;margin-top:20px;">
+                <button class="layui-btn" lay-submit lay-filter="urgencySubmitBtn">确认设置</button>
+                <button type="button" class="layui-btn layui-btn-primary" id="urgencyCancelBtn">取消</button>
+            </div>
+        </form>
+    </div>
+</script>
+
+<script type="text/html" id="detailFormTpl">
+    <div style="padding:20px;">
+        <table class="layui-table" lay-even>
+            <tbody>
+                <tr>
+                    <td width="120" style="font-weight:bold;background:#f8f8f8;">工单ID</td>
+                    <td id="detailId"></td>
+                    <td width="120" style="font-weight:bold;background:#f8f8f8;">状态</td>
+                    <td id="detailStatus"></td>
+                </tr>
+                <tr>
+                    <td style="font-weight:bold;background:#f8f8f8;">报修物品</td>
+                    <td id="detailRepItem"></td>
+                    <td style="font-weight:bold;background:#f8f8f8;">紧急度</td>
+                    <td id="detailUrgency"></td>
+                </tr>
+                <tr>
+                    <td style="font-weight:bold;background:#f8f8f8;">报修学生</td>
+                    <td id="detailStudent"></td>
+                    <td style="font-weight:bold;background:#f8f8f8;">楼栋房间</td>
+                    <td id="detailRoom"></td>
+                </tr>
+                <tr>
+                    <td style="font-weight:bold;background:#f8f8f8;">维修人员</td>
+                    <td id="detailRepairer"></td>
+                    <td style="font-weight:bold;background:#f8f8f8;">提交时间</td>
+                    <td id="detailTime"></td>
+                </tr>
+                <tr>
+                    <td style="font-weight:bold;background:#f8f8f8;">描述</td>
+                    <td colspan="3" id="detailDesc"></td>
+                </tr>
+                <tr id="evaluateTr" style="display:none;">
+                    <td style="font-weight:bold;background:#f8f8f8;">评分</td>
+                    <td id="detailRate"></td>
+                    <td style="font-weight:bold;background:#f8f8f8;">评价内容</td>
+                    <td id="detailEvaluate"></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</script>
+
+<script>
+    layui.use(['form', 'table', 'miniPage', 'miniAdmin', 'element', 'layer', 'axios', 'laytpl'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            miniAdmin = layui.miniAdmin,
+            miniPage = layui.miniPage,
+            layer = layui.layer,
+            axios = layui.axios,
+            laytpl = layui.laytpl;
+
+        table.render({
+            elem: '#currentTableId',
+            method: 'post',
+            url: API_BASE + '/repair/query',
+            defaultToolbar: ['filter', 'exports', 'print'],
+            cols: [[
+                {field: 'id', width: 80, title: 'ID', sort: true},
+                {field: 'repItem', width: 150, title: '报修物品'},
+                {field: 'description', minWidth: 200, title: '描述', ellipsis: true},
+                {
+                    field: 'urgency', width: 100, title: '紧急度', sort: true, templet: function (row) {
+                        if (row.urgency === 0) {
+                            return '<span class="layui-badge layui-bg-cyan">普通</span>';
+                        } else if (row.urgency === 1) {
+                            return '<span class="layui-badge layui-bg-orange">紧急</span>';
+                        } else if (row.urgency === 2) {
+                            return '<span class="layui-badge layui-bg-red">非常紧急</span>';
+                        }
+                        return '<span class="layui-badge">未知</span>';
+                    }
+                },
+                {
+                    field: 'stuId', width: 100, title: '学生', templet: function (row) {
+                        if (row.user && row.user.userName) {
+                            return row.user.userName;
+                        }
+                        return row.stuId || '--';
+                    }
+                },
+                {
+                    field: 'buildingRoom', width: 130, title: '楼栋房间', templet: function (row) {
+                        var building = row.buildingId ? row.buildingId + '栋' : '';
+                        var room = '';
+                        if (row.room && row.room.brand) {
+                            room = row.room.brand;
+                        } else if (row.roomId) {
+                            room = row.roomId + '号';
+                        }
+                        return building + room || '--';
+                    }
+                },
+                {
+                    field: 'repairerId', width: 100, title: '维修人员', templet: function (row) {
+                        if (row.repairer && row.repairer.userName) {
+                            return row.repairer.userName;
+                        }
+                        return row.repairerId || '<span style="color:#999;">未指派</span>';
+                    }
+                },
+                {
+                    field: 'repStatus', width: 100, title: '状态', sort: true, templet: function (row) {
+                        if (row.repStatus === 0) {
+                            return '<span class="layui-badge layui-bg-gray">待指派</span>';
+                        } else if (row.repStatus === 1) {
+                            return '<span class="layui-badge layui-bg-orange">待接单</span>';
+                        } else if (row.repStatus === 2) {
+                            return '<span class="layui-badge layui-bg-blue">维修中</span>';
+                        } else if (row.repStatus === 3) {
+                            return '<span class="layui-badge layui-bg-green">已完成</span>';
+                        } else if (row.repStatus === 4) {
+                            return '<span class="layui-badge layui-bg-cyan">已评价</span>';
+                        }
+                        return '<span class="layui-badge">未知</span>';
+                    }
+                },
+                {field: 'repDate', width: 170, title: '提交时间', templet: function (row) {
+                    return row.repDate || row.submitTime || '--';
+                }},
+                {title: '操作', minWidth: 220, toolbar: '#currentTableBar', align: "center"}
+            ]],
+            limits: [10, 15, 20, 30, 50, 100],
+            limit: 10,
+            page: true,
+            skin: 'line'
+        });
+
+        window.reload = function () {
+            table.reload('currentTableId');
+        };
+
+        form.on('submit(data-search-btn)', function (data) {
+            table.reload('currentTableId', {
+                where: data.field
+            }, 'data');
+            return false;
+        });
+
+        function loadRepairerList(callback) {
+            axios.get('/repair/repairer_list').then(function (res) {
+                var list = [];
+                if (res.data && Array.isArray(res.data)) {
+                    list = res.data;
+                } else if (Array.isArray(res)) {
+                    list = res;
+                }
+                callback(list);
+            }).catch(function () {
+                callback([]);
+            });
+        }
+
+        table.on('tool(currentTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'assign') {
+                var assignHtml = laytpl($('#assignFormTpl').html()).render({});
+                var assignIndex = layer.open({
+                    title: '指派维修人员',
+                    type: 1,
+                    area: ['500px', '420px'],
+                    content: assignHtml,
+                    success: function (layero) {
+                        $('#assignRepairId').val(data.id);
+                        $('#assignRepItem').val(data.repItem);
+                        form.val('assignForm', {id: data.id});
+                        loadRepairerList(function (list) {
+                            var selectHtml = '<option value="">请选择维修人员</option>';
+                            for (var i = 0; i < list.length; i++) {
+                                var item = list[i];
+                                var name = item.userName || item.name || item.repairerName;
+                                var id = item.id || item.userId || item.repairerId;
+                                selectHtml += '<option value="' + id + '">' + name + '</option>';
+                            }
+                            $('#repairerSelect').html(selectHtml);
+                            form.render('select');
+                        });
+                        $('#assignCancelBtn').on('click', function () {
+                            layer.close(assignIndex);
+                        });
+                    }
+                });
+
+                form.on('submit(assignSubmitBtn)', function (formData) {
+                    var params = formData.field;
+                    if (!params.repairerId) {
+                        layer.msg('请选择维修人员');
+                        return false;
+                    }
+                    axios.post('/repair/assign', {
+                        id: params.id,
+                        repairerId: params.repairerId
+                    }).then(function (res) {
+                        layer.msg(res.msg || '指派成功');
+                        layer.close(assignIndex);
+                        table.reload('currentTableId');
+                    }).catch(function (err) {
+                        layer.msg(err.msg || '指派失败，请重试');
+                    });
+                    return false;
+                });
+
+            } else if (obj.event === 'setUrgency') {
+                var urgencyHtml = laytpl($('#urgencyFormTpl').html()).render({});
+                var urgencyIndex = layer.open({
+                    title: '设置紧急度',
+                    type: 1,
+                    area: ['500px', '420px'],
+                    content: urgencyHtml,
+                    success: function (layero) {
+                        $('#urgencyRepairId').val(data.id);
+                        $('#urgencyRepItem').val(data.repItem);
+                        form.val('urgencyForm', {
+                            id: data.id,
+                            urgency: data.urgency != null ? data.urgency : 0
+                        });
+                        form.render('select');
+                        $('#urgencyCancelBtn').on('click', function () {
+                            layer.close(urgencyIndex);
+                        });
+                    }
+                });
+
+                form.on('submit(urgencySubmitBtn)', function (formData) {
+                    var params = formData.field;
+                    axios.post('/repair/set_urgency', {
+                        id: params.id,
+                        urgency: parseInt(params.urgency)
+                    }).then(function (res) {
+                        layer.msg(res.msg || '设置成功');
+                        layer.close(urgencyIndex);
+                        table.reload('currentTableId');
+                    }).catch(function (err) {
+                        layer.msg(err.msg || '设置失败，请重试');
+                    });
+                    return false;
+                });
+
+            } else if (obj.event === 'detail') {
+                var detailHtml = laytpl($('#detailFormTpl').html()).render({});
+                layer.open({
+                    title: '工单详情',
+                    type: 1,
+                    area: ['700px', '520px'],
+                    content: detailHtml,
+                    success: function (layero) {
+                        $('#detailId').text(data.id || '--');
+                        var statusText = '未知';
+                        if (data.repStatus === 0) statusText = '待指派';
+                        else if (data.repStatus === 1) statusText = '待接单';
+                        else if (data.repStatus === 2) statusText = '维修中';
+                        else if (data.repStatus === 3) statusText = '已完成';
+                        else if (data.repStatus === 4) statusText = '已评价';
+                        $('#detailStatus').text(statusText);
+
+                        $('#detailRepItem').text(data.repItem || '--');
+
+                        var urgencyText = '未知';
+                        if (data.urgency === 0) urgencyText = '普通';
+                        else if (data.urgency === 1) urgencyText = '紧急';
+                        else if (data.urgency === 2) urgencyText = '非常紧急';
+                        $('#detailUrgency').text(urgencyText);
+
+                        var studentName = '--';
+                        if (data.user && data.user.userName) studentName = data.user.userName;
+                        else if (data.stuId) studentName = data.stuId;
+                        $('#detailStudent').text(studentName);
+
+                        var building = data.buildingId ? data.buildingId + '栋' : '';
+                        var room = '';
+                        if (data.room && data.room.brand) room = data.room.brand;
+                        else if (data.roomId) room = data.roomId + '号';
+                        $('#detailRoom').text(building + room || '--');
+
+                        var repairerName = '未指派';
+                        if (data.repairer && data.repairer.userName) repairerName = data.repairer.userName;
+                        else if (data.repairerId) repairerName = data.repairerId;
+                        $('#detailRepairer').text(repairerName);
+
+                        $('#detailTime').text(data.repDate || data.submitTime || '--');
+                        $('#detailDesc').text(data.description || '无');
+
+                        if (data.repStatus === 4 || data.rating || data.feedback) {
+                            $('#evaluateTr').show();
+                            var rate = data.rating || 0;
+                            var rateText = '';
+                            for (var i = 0; i < 5; i++) {
+                                if (i < rate) {
+                                    rateText += '<i class="layui-icon layui-icon-rate-solid" style="color:#ffb800;"></i>';
+                                } else {
+                                    rateText += '<i class="layui-icon layui-icon-rate" style="color:#c2c2c2;"></i>';
+                                }
+                            }
+                            $('#detailRate').html(rateText);
+                            $('#detailEvaluate').text(data.feedback || '无评价内容');
+                        }
+                    }
+                });
+            }
+        });
+    });
+</script>

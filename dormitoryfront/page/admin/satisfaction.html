@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>满意度分析</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="../../lib/layui-v2.5.5/css/layui.css" media="all">
+    <link rel="stylesheet" href="../../css/public.css" media="all">
+    <style>
+        .avg-score-card {
+            text-align: center;
+            padding: 30px 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border-radius: 8px;
+            color: #fff;
+        }
+        .avg-score-card .score-label {
+            font-size: 16px;
+            opacity: 0.9;
+            margin-bottom: 10px;
+        }
+        .avg-score-card .score-number {
+            font-size: 72px;
+            font-weight: bold;
+            line-height: 1;
+            margin-bottom: 15px;
+        }
+        .avg-score-card .score-number small {
+            font-size: 24px;
+            opacity: 0.8;
+        }
+        .avg-score-card .score-stars {
+            font-size: 28px;
+            margin-bottom: 10px;
+        }
+        .avg-score-card .score-count {
+            font-size: 14px;
+            opacity: 0.85;
+        }
+        .stat-item {
+            display: flex;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        .stat-item .star-label {
+            width: 80px;
+            font-size: 14px;
+            color: #666;
+        }
+        .stat-item .star-label i {
+            color: #ffb800;
+            margin-right: 3px;
+        }
+        .stat-item .bar-wrap {
+            flex: 1;
+            margin: 0 15px;
+            background: #f2f2f2;
+            height: 20px;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+        .stat-item .bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ffb800, #ff9500);
+            border-radius: 10px;
+            transition: width 0.8s ease;
+        }
+        .stat-item .count-label {
+            width: 80px;
+            text-align: right;
+            font-size: 14px;
+            color: #333;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main">
+        <div class="layui-row layui-col-space15">
+            <div class="layui-col-md4">
+                <div class="layui-card">
+                    <div class="layui-card-header"><i class="fa fa-star" style="margin-right:10px;color:#ffb800;"></i>平均评分</div>
+                    <div class="layui-card-body" style="padding:15px;">
+                        <div class="avg-score-card">
+                            <div class="score-label">综合满意度评分</div>
+                            <div class="score-number"><span id="avgScore">0.0</span><small> / 5.0</small></div>
+                            <div class="score-stars" id="avgStars"></div>
+                            <div class="score-count">共 <span id="totalEvaluated">0</span> 条评价</div>
+                        </div>
+                        <div style="margin-top:20px;">
+                            <div class="stat-item">
+                                <div class="star-label"><i class="layui-icon layui-icon-rate-solid"></i>5星</div>
+                                <div class="bar-wrap"><div class="bar-fill" id="bar5" style="width:0%"></div></div>
+                                <div class="count-label"><span id="count5">0</span>条</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="star-label"><i class="layui-icon layui-icon-rate-solid"></i>4星</div>
+                                <div class="bar-wrap"><div class="bar-fill" id="bar4" style="width:0%"></div></div>
+                                <div class="count-label"><span id="count4">0</span>条</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="star-label"><i class="layui-icon layui-icon-rate-solid"></i>3星</div>
+                                <div class="bar-wrap"><div class="bar-fill" id="bar3" style="width:0%"></div></div>
+                                <div class="count-label"><span id="count3">0</span>条</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="star-label"><i class="layui-icon layui-icon-rate-solid"></i>2星</div>
+                                <div class="bar-wrap"><div class="bar-fill" id="bar2" style="width:0%"></div></div>
+                                <div class="count-label"><span id="count2">0</span>条</div>
+                            </div>
+                            <div class="stat-item">
+                                <div class="star-label"><i class="layui-icon layui-icon-rate-solid"></i>1星</div>
+                                <div class="bar-wrap"><div class="bar-fill" id="bar1" style="width:0%"></div></div>
+                                <div class="count-label"><span id="count1">0</span>条</div>
+                            </div>
+                        </div>
+                        <div style="margin-top:20px;">
+                            <div id="rateBarChart" style="width:100%;height:250px;"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="layui-col-md8">
+                <div class="layui-card">
+                    <div class="layui-card-header"><i class="fa fa-list" style="margin-right:10px;color:#1e9fff;"></i>已评价工单列表</div>
+                    <div class="layui-card-body">
+                        <table class="layui-hide" id="ratedTableId" lay-filter="ratedTableFilter"></table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../../lib/layui-v2.5.5/layui.js" charset="utf-8"></script>
+<script src="../../js/lay-config.js" charset="utf-8"></script>
+<script>
+    layui.use(['jquery', 'layer', 'axios', 'table', 'rate', 'echarts', 'form'], function () {
+        var $ = layui.jquery,
+            layer = layui.layer,
+            axios = layui.axios,
+            table = layui.table,
+            rate = layui.rate,
+            echarts = layui.echarts,
+            form = layui.form;
+
+        var rateBarChart = echarts.init(document.getElementById('rateBarChart'));
+
+        function renderStars(score) {
+            var html = '';
+            for (var i = 1; i <= 5; i++) {
+                if (i <= Math.round(score)) {
+                    html += '<i class="layui-icon layui-icon-rate-solid" style="color:#fff;"></i>';
+                } else {
+                    html += '<i class="layui-icon layui-icon-rate" style="color:rgba(255,255,255,0.5);"></i>';
+                }
+            }
+            return html;
+        }
+
+        function loadSatisfactionData() {
+            axios.post('/repair/satisfaction').then(function (res) {
+                var data = res.data || res;
+
+                var avgScore = data.avgScore || data.avgSatisfaction || 0;
+                var totalEvaluated = data.totalEvaluated || data.totalCount || data.count || 0;
+                var star1 = data.star1 || data.count1 || data.score1Count || 0;
+                var star2 = data.star2 || data.count2 || data.score2Count || 0;
+                var star3 = data.star3 || data.count3 || data.score3Count || 0;
+                var star4 = data.star4 || data.count4 || data.score4Count || 0;
+                var star5 = data.star5 || data.count5 || data.score5Count || 0;
+
+                if (data.starDistribution && Array.isArray(data.starDistribution)) {
+                    if (data.starDistribution.length >= 5) {
+                        star1 = data.starDistribution[0] || star1;
+                        star2 = data.starDistribution[1] || star2;
+                        star3 = data.starDistribution[2] || star3;
+                        star4 = data.starDistribution[3] || star4;
+                        star5 = data.starDistribution[4] || star5;
+                    }
+                }
+
+                var totalStars = star1 + star2 + star3 + star4 + star5;
+                if (totalEvaluated === 0 && totalStars > 0) {
+                    totalEvaluated = totalStars;
+                }
+
+                $('#avgScore').text(parseFloat(avgScore).toFixed(1));
+                $('#avgStars').html(renderStars(avgScore));
+                $('#totalEvaluated').text(totalEvaluated);
+
+                $('#count1').text(star1);
+                $('#count2').text(star2);
+                $('#count3').text(star3);
+                $('#count4').text(star4);
+                $('#count5').text(star5);
+
+                var maxCount = Math.max(star1, star2, star3, star4, star5, 1);
+                setTimeout(function () {
+                    $('#bar1').css('width', (star1 / maxCount * 100) + '%');
+                    $('#bar2').css('width', (star2 / maxCount * 100) + '%');
+                    $('#bar3').css('width', (star3 / maxCount * 100) + '%');
+                    $('#bar4').css('width', (star4 / maxCount * 100) + '%');
+                    $('#bar5').css('width', (star5 / maxCount * 100) + '%');
+                }, 100);
+
+                var rateBarOption = {
+                    tooltip: {
+                        trigger: 'axis',
+                        axisPointer: {type: 'shadow'}
+                    },
+                    grid: {
+                        left: '3%',
+                        right: '4%',
+                        bottom: '3%',
+                        top: '10%',
+                        containLabel: true
+                    },
+                    xAxis: {
+                        type: 'category',
+                        data: ['1星', '2星', '3星', '4星', '5星'],
+                        axisLabel: {color: '#666'}
+                    },
+                    yAxis: {
+                        type: 'value',
+                        minInterval: 1,
+                        axisLabel: {color: '#666'}
+                    },
+                    series: [{
+                        type: 'bar',
+                        data: [
+                            {value: star1, itemStyle: {color: '#ff5722', borderRadius: [6, 6, 0, 0]}},
+                            {value: star2, itemStyle: {color: '#ff9500', borderRadius: [6, 6, 0, 0]}},
+                            {value: star3, itemStyle: {color: '#ffb800', borderRadius: [6, 6, 0, 0]}},
+                            {value: star4, itemStyle: {color: '#5fb878', borderRadius: [6, 6, 0, 0]}},
+                            {value: star5, itemStyle: {color: '#16baaa', borderRadius: [6, 6, 0, 0]}}
+                        ],
+                        barWidth: '50%',
+                        label: {
+                            show: true,
+                            position: 'top',
+                            formatter: '{c}'
+                        }
+                    }]
+                };
+                rateBarChart.setOption(rateBarOption);
+
+            }).catch(function () {
+                layer.msg('满意度数据加载失败', {icon: 2});
+            });
+        }
+
+        table.render({
+            elem: '#ratedTableId',
+            method: 'post',
+            url: API_BASE + '/repair/query',
+            where: {repStatus: 4},
+            defaultToolbar: ['filter', 'exports', 'print'],
+            cols: [[
+                {field: 'id', width: 80, title: 'ID', sort: true},
+                {field: 'repItem', width: 130, title: '报修物品'},
+                {
+                    field: 'stuId', width: 100, title: '学生', templet: function (row) {
+                        if (row.user && row.user.userName) {
+                            return row.user.userName;
+                        }
+                        return row.stuId || '--';
+                    }
+                },
+                {
+                    field: 'repairerId', width: 100, title: '维修人员', templet: function (row) {
+                        if (row.repairer && row.repairer.userName) {
+                            return row.repairer.userName;
+                        }
+                        return row.repairerId || '--';
+                    }
+                },
+                {
+                    field: 'rating', width: 150, title: '评分', templet: function (row) {
+                        var score = row.rating || 0;
+                        return '<div id="rate-' + row.id + '" data-score="' + score + '"></div>';
+                    }
+                },
+                {
+                    field: 'feedback', minWidth: 200, title: '评价内容', templet: function (row) {
+                        var content = row.feedback || '';
+                        if (!content) {
+                            return '<span style="color:#999;">无评价内容</span>';
+                        }
+                        return '<div style="line-height:1.4;">' + content + '</div>';
+                    }
+                },
+                {
+                    field: 'completedTime', width: 170, title: '完成时间', templet: function (row) {
+                        return row.completedTime || row.repDate || '--';
+                    }
+                }
+            ]],
+            limits: [10, 15, 20, 30, 50],
+            limit: 10,
+            page: true,
+            skin: 'line',
+            done: function (res, curr, count) {
+                var list = [];
+                if (res.data && res.data.records) {
+                    list = res.data.records;
+                } else if (res.data && Array.isArray(res.data)) {
+                    list = res.data;
+                } else if (Array.isArray(res)) {
+                    list = res;
+                }
+                setTimeout(function () {
+                    for (var i = 0; i < list.length; i++) {
+                        var item = list[i];
+                        var score = item.rating || 0;
+                        if (score > 0) {
+                            rate.render({
+                                elem: '#rate-' + item.id,
+                                value: score,
+                                readonly: true,
+                                theme: '#ffb800'
+                            });
+                        }
+                    }
+                }, 50);
+            }
+        });
+
+        loadSatisfactionData();
+
+        window.onresize = function () {
+            rateBarChart.resize();
+        };
+    });
+</script>
+</body>
+</html>

@@ -1,0 +1,215 @@
+<style>
+    .repair-add .form-card {padding:30px 40px;}
+    .repair-add .layui-form-item {margin-bottom:25px;}
+    .repair-add .layui-form-label {width:100px;font-weight:bold;}
+    .repair-add .layui-input-block {margin-left:130px;}
+    .repair-add .urgency-item {display:inline-block;margin-right:25px;cursor:pointer;}
+    .repair-add .urgency-item input[type="radio"] {display:none;}
+    .repair-add .urgency-item label {display:inline-flex;align-items:center;padding:8px 18px;border:2px solid #e6e6e6;border-radius:8px;transition:all 0.3s;font-weight:normal;margin:0;}
+    .repair-add .urgency-item input[type="radio"]:checked + label {border-color:#1e9fff;background:#f0f7ff;color:#1e9fff;}
+    .repair-add .urgency-item .u-normal:checked + label {border-color:#1890ff;background:#e6f7ff;color:#1890ff;}
+    .repair-add .urgency-item .u-urgent:checked + label {border-color:#fa8c16;background:#fff7e6;color:#fa8c16;}
+    .repair-add .urgency-item .u-vurgent:checked + label {border-color:#f5222d;background:#fff1f0;color:#f5222d;}
+    .repair-add .urgency-item i {margin-right:6px;font-size:16px;}
+    .repair-add .upload-box {border:2px dashed #d9d9d9;border-radius:8px;padding:20px;text-align:center;transition:all 0.3s;cursor:pointer;}
+    .repair-add .upload-box:hover {border-color:#1e9fff;background:#f0f7ff;}
+    .repair-add .upload-tip {color:#999;font-size:12px;margin-top:8px;}
+    .repair-add .uploaded-list {margin-top:15px;}
+    .repair-add .uploaded-item {display:inline-block;position:relative;margin-right:10px;margin-bottom:10px;}
+    .repair-add .uploaded-item img {width:100px;height:100px;object-fit:cover;border-radius:6px;border:1px solid #e6e6e6;}
+    .repair-add .uploaded-item .del-btn {position:absolute;top:-8px;right:-8px;width:22px;height:22px;line-height:22px;text-align:center;background:#f5222d;color:#fff;border-radius:50%;cursor:pointer;font-size:14px;}
+    .repair-add .submit-area {text-align:center;margin-top:30px;padding-top:20px;border-top:1px solid #f0f0f0;}
+    .repair-add .submit-area .layui-btn {min-width:160px;height:42px;line-height:42px;font-size:15px;}
+</style>
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main repair-add">
+        <div class="layui-card form-card">
+            <div class="layui-card-header" style="font-weight:bold;font-size:16px;border-bottom:2px solid #1e9fff;padding-bottom:15px;margin-bottom:25px;">
+                <i class="fa fa-wrench" style="color:#1e9fff;margin-right:8px;"></i>提交报修申请
+                <span style="float:right;font-size:12px;color:#999;font-weight:normal;">请如实填写报修信息，带 <span style="color:#f5222d;">*</span> 为必填项</span>
+            </div>
+            <form class="layui-form" lay-filter="repairAddForm">
+                <div class="layui-form-item">
+                    <label class="layui-form-label">报修物品<span style="color:#f5222d;">*</span></label>
+                    <div class="layui-input-block">
+                        <select name="repItem" lay-verify="required" lay-reqtext="请选择报修物品类型">
+                            <option value="">请选择报修物品类型</option>
+                            <option value="水电维修">水电维修</option>
+                            <option value="家具维修">家具维修</option>
+                            <option value="门窗维修">门窗维修</option>
+                            <option value="电器维修">电器维修</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="layui-form-item layui-form-text">
+                    <label class="layui-form-label">问题描述<span style="color:#f5222d;">*</span></label>
+                    <div class="layui-input-block">
+                        <textarea name="description" lay-verify="required" lay-reqtext="请描述报修问题" placeholder="请详细描述问题情况、位置等信息，方便维修人员快速处理..." class="layui-textarea" style="min-height:120px;resize:vertical;"></textarea>
+                        <div style="margin-top:6px;color:#999;font-size:12px;">
+                            <i class="fa fa-info-circle"></i> 建议详细说明故障现象、具体位置等，字数不少于5个字
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">紧急程度<span style="color:#f5222d;">*</span></label>
+                    <div class="layui-input-block" style="padding-top:4px;">
+                        <div class="urgency-item">
+                            <input type="radio" name="urgency" value="0" title="普通" class="u-normal" id="u0" checked>
+                            <label for="u0"><i class="fa fa-clock-o"></i>普通</label>
+                        </div>
+                        <div class="urgency-item">
+                            <input type="radio" name="urgency" value="1" title="紧急" class="u-urgent" id="u1">
+                            <label for="u1"><i class="fa fa-exclamation-triangle"></i>紧急</label>
+                        </div>
+                        <div class="urgency-item">
+                            <input type="radio" name="urgency" value="2" title="非常紧急" class="u-vurgent" id="u2">
+                            <label for="u2"><i class="fa fa-fire"></i>非常紧急</label>
+                        </div>
+                        <div style="margin-top:10px;color:#999;font-size:12px;">
+                            <i class="fa fa-lightbulb-o"></i> 非常紧急：影响正常生活或存在安全隐患的问题，如水管爆裂、电路起火等
+                        </div>
+                    </div>
+                </div>
+
+                <div class="layui-form-item">
+                    <label class="layui-form-label">上传图片</label>
+                    <div class="layui-input-block">
+                        <div id="uploadArea">
+                            <div class="upload-box" id="uploadBtn">
+                                <i class="fa fa-cloud-upload" style="font-size:40px;color:#1e9fff;"></i>
+                                <div style="margin-top:10px;color:#666;font-size:14px;">点击或拖拽图片到此处上传</div>
+                                <div class="upload-tip">支持 JPG、PNG 格式，单张不超过 5MB，最多上传 9 张</div>
+                            </div>
+                            <input type="hidden" name="images" id="imagesInput" value="">
+                        </div>
+                        <div class="uploaded-list" id="uploadedList"></div>
+                    </div>
+                </div>
+
+                <div class="layui-form-item submit-area">
+                    <button class="layui-btn layui-btn-normal layui-btn-lg" lay-submit lay-filter="submitRepairBtn">
+                        <i class="fa fa-paper-plane"></i> 提交报修申请
+                    </button>
+                    <button type="reset" class="layui-btn layui-btn-primary layui-btn-lg" style="margin-left:15px;">
+                        <i class="fa fa-eraser"></i> 重置表单
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    layui.use(['form', 'upload', 'axios', 'layer', 'miniPage'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            upload = layui.upload,
+            axios = layui.axios,
+            layer = layui.layer;
+
+        form.render();
+
+        var uploadedImages = [];
+
+        function updateImagesInput() {
+            $('#imagesInput').val(uploadedImages.join(','));
+        }
+
+        function renderUploadedList() {
+            var html = '';
+            uploadedImages.forEach(function (src, index) {
+                html += '<div class="uploaded-item">' +
+                    '<img src="' + src + '" alt="图片" onclick="window.open(\'' + src + '\')">' +
+                    '<div class="del-btn" data-index="' + index + '"><i class="fa fa-times"></i></div>' +
+                    '</div>';
+            });
+            $('#uploadedList').html(html);
+
+            $('.uploaded-item .del-btn').off('click').on('click', function () {
+                var idx = parseInt($(this).data('index'));
+                uploadedImages.splice(idx, 1);
+                renderUploadedList();
+                updateImagesInput();
+            });
+        }
+
+        var uploadInst = upload.render({
+            elem: '#uploadBtn',
+            url: API_BASE + '/file/upload',
+            method: 'POST',
+            accept: 'images',
+            acceptMime: 'image/jpg,image/jpeg,image/png',
+            size: 5120,
+            multiple: true,
+            number: 9,
+            auto: true,
+            before: function (obj) {
+                layer.load(2, {shade: [0.3, '#fff']});
+            },
+            done: function (res, index, upload) {
+                layer.closeAll('loading');
+                if (res.code === 200 || res.code === 0) {
+                    var url = res.data || res.url || res.path || res.msg;
+                    if (typeof url === 'object' && url.url) url = url.url;
+                    if (url) {
+                        if (uploadedImages.length >= 9) {
+                            layer.msg('最多只能上传9张图片', {icon: 2});
+                            return;
+                        }
+                        uploadedImages.push(url);
+                        renderUploadedList();
+                        updateImagesInput();
+                        layer.msg('上传成功', {icon: 1, time: 1000});
+                    } else {
+                        layer.msg(res.msg || '上传成功，但未获取到图片地址', {icon: 2});
+                    }
+                } else {
+                    layer.msg(res.msg || '上传失败', {icon: 2});
+                }
+            },
+            error: function (index, upload) {
+                layer.closeAll('loading');
+                layer.msg('上传请求失败，请检查网络连接', {icon: 2});
+            }
+        });
+
+        form.on('submit(submitRepairBtn)', function (data) {
+            var field = data.field;
+            if (field.description.trim().length < 5) {
+                layer.msg('问题描述字数不能少于5个字符', {icon: 2});
+                return false;
+            }
+            var loading = layer.load(2);
+            axios.post('repair/stu_create', {
+                repItem: field.repItem,
+                description: field.description,
+                urgency: parseInt(field.urgency),
+                images: field.images
+            }).then(function (res) {
+                layer.close(loading);
+                if (res.code === 200) {
+                    layer.msg(res.msg || '提交成功', {icon: 1, time: 1500}, function () {
+                    if (window.parent && window.parent.reload) {
+                        window.parent.reload();
+                    }
+                    if (window.parent && window.parent.layui && window.parent.layui.layer) {
+                        var parentIndex = window.parent.layui.layer.index;
+                        if (parentIndex !== undefined) {
+                            window.parent.layui.layer.closeAll();
+                        }
+                    }
+                });
+            } else {
+                layer.msg(res.msg || '提交失败', {icon: 2});
+            }
+        }).catch(function (err) {
+            layer.close(loading);
+            layer.msg('请求失败，请检查网络后重试', {icon: 2});
+        });
+        return false;
+    });
+});
+</script>

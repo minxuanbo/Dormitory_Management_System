@@ -1,0 +1,203 @@
+<style>
+    .history-list .search-form {margin-bottom: 15px;}
+</style>
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main history-list">
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <form class="layui-form search-form" action="" lay-filter="searchForm">
+                    <div class="layui-form-item">
+                        <div class="layui-inline">
+                            <label class="layui-form-label">提交时间</label>
+                            <div class="layui-input-inline" style="width:250px;">
+                                <input type="text" name="dateRange" id="dateRange" placeholder="请选择时间范围" autocomplete="off" class="layui-input">
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">紧急度</label>
+                            <div class="layui-input-inline">
+                                <select name="urgency">
+                                    <option value="">全部</option>
+                                    <option value="0">普通</option>
+                                    <option value="1">紧急</option>
+                                    <option value="2">非常紧急</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <label class="layui-form-label">状态</label>
+                            <div class="layui-input-inline">
+                                <select name="status">
+                                    <option value="">全部</option>
+                                    <option value="0">待指派</option>
+                                    <option value="1">待接单</option>
+                                    <option value="2">维修中</option>
+                                    <option value="3">已完成</option>
+                                    <option value="4">已评价</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="layui-inline">
+                            <button type="submit" class="layui-btn layui-btn-normal" lay-submit lay-filter="data-search-btn">
+                                <i class="layui-icon"></i> 搜索
+                            </button>
+                            <button type="button" class="layui-btn layui-btn-primary" id="resetBtn">
+                                <i class="layui-icon">ဂ</i> 重置
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <div class="layui-card">
+            <div class="layui-card-body">
+                <table class="layui-hide" id="historyTableId" lay-filter="historyTableFilter"></table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script type="text/html" id="detailTpl">
+    <div style="padding:20px;">
+        <table class="layui-table" lay-skin="line">
+            <colgroup>
+                <col width="120">
+                <col>
+            </colgroup>
+            <tbody>
+                <tr><td>工单ID</td><td>{{d.id}}</td></tr>
+                <tr><td>报修物品</td><td>{{d.repItem}}</td></tr>
+                <tr><td>报修描述</td><td>{{d.description}}</td></tr>
+                <tr><td>紧急度</td><td>{{# if(d.urgency === 2){ }}<span class="layui-badge layui-bg-red">非常紧急</span>{{# } else if(d.urgency === 1){ }}<span class="layui-badge layui-bg-orange">紧急</span>{{# } else { }}<span class="layui-badge layui-bg-blue">普通</span>{{# } }}</td></tr>
+                <tr><td>学生</td><td>{{d.stuName || (d.user ? d.user.userName : '-')}}</td></tr>
+                <tr><td>楼栋</td><td>{{d.buildingName || (d.building ? d.building.buildingName : (d.buildingId ? d.buildingId + '栋' : '-'))}}</td></tr>
+                <tr><td>房间</td><td>{{d.roomName || (d.room ? d.room.brand : (d.roomId ? d.roomId + '室' : '-'))}}</td></tr>
+                <tr><td>状态</td><td>{{# if(d.repStatus === 0){ }}<span class="layui-badge layui-bg-gray">待指派</span>{{# } else if(d.repStatus === 1){ }}<span class="layui-badge layui-bg-orange">待接单</span>{{# } else if(d.repStatus === 2){ }}<span class="layui-badge layui-bg-blue">维修中</span>{{# } else if(d.repStatus === 3){ }}<span class="layui-badge layui-bg-green">已完成</span>{{# } else if(d.repStatus === 4){ }}<span class="layui-badge layui-bg-cyan">已评价</span>{{# } }}</td></tr>
+                <tr><td>提交时间</td><td>{{d.repDate}}</td></tr>
+                {{# if(d.repairRecord){ }}<tr><td>维修记录</td><td>{{d.repairRecord}}</td></tr>{{# } }}
+                {{# if(d.completedTime){ }}<tr><td>完成时间</td><td>{{d.completedTime}}</td></tr>{{# } }}
+                {{# if(d.feedback){ }}<tr><td>评价内容</td><td>{{d.feedback}}</td></tr>{{# } }}
+                {{# if(d.rating){ }}<tr><td>评价评分</td><td>{{d.rating}} 分</td></tr>{{# } }}
+            </tbody>
+        </table>
+    </div>
+</script>
+
+<script>
+    layui.use(['jquery', 'layer', 'table', 'form', 'axios', 'laytpl', 'laydate'], function () {
+        var $ = layui.jquery,
+            layer = layui.layer,
+            table = layui.table,
+            form = layui.form,
+            axios = layui.axios,
+            laytpl = layui.laytpl,
+            laydate = layui.laydate;
+
+        laydate.render({
+            elem: '#dateRange',
+            range: true,
+            format: 'yyyy-MM-dd'
+        });
+
+        renderTable({});
+
+        form.on('submit(data-search-btn)', function (data) {
+            var field = data.field;
+            var where = {};
+            if (field.dateRange) {
+                var dates = field.dateRange.split(' - ');
+                if (dates.length === 2) {
+                    where.startTime = dates[0];
+                    where.endTime = dates[1];
+                }
+            }
+            if (field.urgency !== '') where.urgency = field.urgency;
+            if (field.status !== '') where.repStatus = field.status;
+            renderTable(where);
+            return false;
+        });
+
+        $('#resetBtn').on('click', function() {
+            form.val('searchForm', {
+                dateRange: '',
+                urgency: '',
+                status: ''
+            });
+            $('input[name="dateRange"]').val('');
+            renderTable({});
+        });
+
+        function renderTable(where) {
+            table.render({
+                elem: '#historyTableId',
+                method: 'post',
+                url: API_BASE + '/repair/my_history',
+                where: where,
+                defaultToolbar: ['filter', 'exports', 'print'],
+                cols: [[
+                    {field: 'id', width: 80, title: 'ID', sort: true},
+                    {field: 'repItem', title: '报修物品', minWidth: 120},
+                    {field: 'description', title: '描述', minWidth: 200},
+                    {field: 'urgency', width: 100, title: '紧急度', templet: function(row) {
+                            if (row.urgency === 2) return '<span class="layui-badge layui-bg-red">非常紧急</span>';
+                            if (row.urgency === 1) return '<span class="layui-badge layui-bg-orange">紧急</span>';
+                            return '<span class="layui-badge layui-bg-blue">普通</span>';
+                        }},
+                    {field: 'stuName', width: 100, title: '学生', templet: function(row) {
+                            return row.stuName || (row.user ? row.user.userName : '-');
+                        }},
+                    {field: 'location', width: 140, title: '楼栋房间', templet: function(row) {
+                            var building = row.buildingName || (row.building ? row.building.buildingName : (row.buildingId ? row.buildingId + '栋' : ''));
+                            var room = row.roomName || (row.room ? row.room.brand : (row.roomId ? row.roomId + '室' : ''));
+                            return building + ' ' + room;
+                        }},
+                    {field: 'repStatus', width: 100, title: '状态', templet: function(row) {
+                            return getStatusBadge(row.repStatus);
+                        }},
+                    {field: 'repDate', width: 170, title: '提交时间', sort: true},
+                    {field: 'completedTime', width: 170, title: '完成时间', sort: true},
+                    {width: 110, title: '操作', toolbar: '#operBar', fixed: 'right'}
+                ]],
+                limits: [10, 15, 20, 30, 50, 100],
+                limit: 10,
+                page: true,
+                skin: 'line'
+            });
+        }
+
+        function getStatusBadge(status) {
+            switch(status) {
+                case 0: return '<span class="layui-badge layui-bg-gray">待指派</span>';
+                case 1: return '<span class="layui-badge layui-bg-orange">待接单</span>';
+                case 2: return '<span class="layui-badge layui-bg-blue">维修中</span>';
+                case 3: return '<span class="layui-badge layui-bg-green">已完成</span>';
+                case 4: return '<span class="layui-badge layui-bg-cyan">已评价</span>';
+                default: return '<span class="layui-badge">未知</span>';
+            }
+        }
+
+        table.on('tool(historyTableFilter)', function(obj) {
+            var data = obj.data;
+            if (obj.event === 'detail') {
+                var detailTpl = $('#detailTpl').html();
+                laytpl(detailTpl).render(data, function(html){
+                    layer.open({
+                        type: 1,
+                        title: '工单详情 - #' + data.id,
+                        area: ['700px', '550px'],
+                        content: html
+                    });
+                });
+            }
+        });
+
+        window.reloadTable = function () {
+            renderTable({});
+        };
+    });
+</script>
+
+<script type="text/html" id="operBar">
+    <a class="layui-btn layui-btn-xs layui-btn-primary" lay-event="detail">查看详情</a>
+</script>

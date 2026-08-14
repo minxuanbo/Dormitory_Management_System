@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>宿舍分配</title>
+    <meta name="renderer" content="webkit">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+    <link rel="stylesheet" href="../../lib/layui-v2.5.5/css/layui.css" media="all">
+    <link rel="stylesheet" href="../../css/public.css" media="all">
+</head>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <blockquote class="layui-elem-quote">宿舍分配 - 选择学生和房间进行分配</blockquote>
+        <div class="layui-form">
+            <div class="layui-form-item">
+                <label class="layui-form-label">学生</label>
+                <div class="layui-input-block">
+                    <select name="studentId" lay-verify="required" lay-search="">
+                        <option value="">请选择学生</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <label class="layui-form-label">房间</label>
+                <div class="layui-input-block">
+                    <select name="roomId" lay-verify="required" lay-search="">
+                        <option value="">请选择房间</option>
+                    </select>
+                </div>
+            </div>
+            <div class="layui-form-item">
+                <div class="layui-input-block">
+                    <button class="layui-btn" lay-submit lay-filter="assignForm">分配宿舍</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="../../lib/layui-v2.5.5/layui.js" charset="utf-8"></script>
+<script>
+    layui.use(['form', 'axios', 'storage'], function () {
+        var form = layui.form,
+            axios = layui.axios;
+
+        form.on('submit(assignForm)', function(data) {
+            axios.post('/student/assign', data.field).then(function(response) {
+                if(response.code === 200) {
+                    layer.msg('分配成功');
+                }
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

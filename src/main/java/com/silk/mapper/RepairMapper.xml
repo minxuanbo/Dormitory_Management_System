@@ -1,0 +1,194 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.silk.mapper.RepairMapper">
+
+	<resultMap type="com.silk.entity.Repair" id="Repair">
+		<id column="id" property="id"/>
+		<result column="rep_item"  property="repItem"/>
+		<result column="description"  property="description"/>
+		<result column="rep_date"  property="repDate"/>
+		<result column="stu_id" property="stuId"/>
+		<result column="building_id"  property="buildingId"/>
+		<result column="room_id"  property="roomId"/>
+		<result column="rep_status"  property="repStatus"/>
+		<result column="rep_man"  property="repMan"/>
+		<result column="urgency"  property="urgency"/>
+		<result column="repairer_id"  property="repairerId"/>
+		<result column="images"  property="images"/>
+		<result column="repair_record"  property="repairRecord"/>
+		<result column="rating"  property="rating"/>
+		<result column="feedback"  property="feedback"/>
+		<result column="assigned_time"  property="assignedTime"/>
+		<result column="accepted_time"  property="acceptedTime"/>
+		<result column="completed_time"  property="completedTime"/>
+	</resultMap>
+
+	<insert id="create" keyProperty="id" useGeneratedKeys="true" parameterType="com.silk.entity.Repair">
+		insert into tb_repair(
+			rep_item,
+			description,
+			rep_date,
+			stu_id,
+			building_id,
+			room_id,
+			rep_status,
+			rep_man,
+			urgency,
+			repairer_id,
+			images,
+			repair_record,
+			rating,
+			feedback,
+			assigned_time,
+			accepted_time,
+			completed_time
+		)values(
+			#{repItem},
+			#{description},
+			#{repDate},
+		    #{stuId},
+			#{buildingId},
+			#{roomId},
+			#{repStatus},
+			#{repMan},
+			#{urgency},
+			#{repairerId},
+			#{images},
+			#{repairRecord},
+			#{rating},
+			#{feedback},
+			#{assignedTime},
+			#{acceptedTime},
+			#{completedTime}
+		)
+	</insert>
+
+	<select id="query" resultMap="Repair">
+		select * from tb_repair
+		<include refid="RepairFindCriteria"/>
+		order by
+		<choose>
+			<when test="urgency != null and urgency == 2">urgency desc,</when>
+			<otherwise>field(urgency, 2, 1, 0),</otherwise>
+		</choose>
+		rep_date desc
+	</select>
+
+	<select id="count" resultType="int">
+		select count(1) from tb_repair
+		<include refid="RepairFindCriteria"/>
+	</select>
+
+	<select id="detail" resultMap="Repair">
+		select * from tb_repair where id = #{id}
+	</select>
+
+	<delete id="delete">
+		delete from tb_repair where id = #{id}
+	</delete>
+
+	<update id="update">
+		update tb_repair set
+			rep_item=#{repItem},
+			description=#{description},
+			rep_date=#{repDate},
+		    stu_id=#{stuId},
+			building_id=#{buildingId},
+			room_id=#{roomId},
+			rep_status=#{repStatus},
+			rep_man=#{repMan},
+			urgency=#{urgency},
+			repairer_id=#{repairerId},
+			images=#{images},
+			repair_record=#{repairRecord},
+			rating=#{rating},
+			feedback=#{feedback},
+			assigned_time=#{assignedTime},
+			accepted_time=#{acceptedTime},
+			completed_time=#{completedTime}
+		where id = #{id}
+	</update>
+
+	<update id="updateSelective">
+		update tb_repair
+		<set>
+			<if test="repItem != null and repItem != ''"> rep_item = #{repItem},</if>
+			<if test="description != null and description != ''"> description = #{description},</if>
+			<if test="repDate != null"> rep_date = #{repDate},</if>
+			<if test="stuId != null">stu_id = #{stuId},</if>
+			<if test="buildingId != null">building_id = #{buildingId},</if>
+			<if test="roomId != null">room_id = #{roomId},</if>
+			<if test="repStatus != null">rep_status = #{repStatus},</if>
+			<if test="repMan != null and repMan != ''"> rep_man = #{repMan},</if>
+			<if test="urgency != null">urgency = #{urgency},</if>
+			<if test="repairerId != null">repairer_id = #{repairerId},</if>
+			<if test="images != null and images != ''"> images = #{images},</if>
+			<if test="repairRecord != null and repairRecord != ''"> repair_record = #{repairRecord},</if>
+			<if test="rating != null">rating = #{rating},</if>
+			<if test="feedback != null and feedback != ''"> feedback = #{feedback},</if>
+			<if test="assignedTime != null">assigned_time = #{assignedTime},</if>
+			<if test="acceptedTime != null">accepted_time = #{acceptedTime},</if>
+			<if test="completedTime != null">completed_time = #{completedTime},</if>
+		</set>
+		where id = #{id}
+	</update>
+
+	<sql id="RepairFindCriteria">
+		<where>
+			<if test="id != null">and id = #{id}</if>
+			<if test="repItem != null and repItem != ''">and rep_item like concat('%', #{repItem}, '%')</if>
+			<if test="description != null and description != ''">and description like concat('%', #{description}, '%')</if>
+			<if test="keyword != null and keyword != ''">and (rep_item like concat('%', #{keyword}, '%') or description like concat('%', #{keyword}, '%'))</if>
+			<if test="stuId != null">and stu_id = #{stuId}</if>
+			<if test="buildingId != null">and building_id = #{buildingId}</if>
+			<if test="roomId != null">and room_id = #{roomId}</if>
+			<if test="repStatus != null">and rep_status = #{repStatus}</if>
+			<if test="repStatuses != null and repStatuses != ''">and FIND_IN_SET(rep_status, #{repStatuses})</if>
+			<if test="repMan != null and repMan != ''">and rep_man = #{repMan}</if>
+			<if test="urgency != null">and urgency = #{urgency}</if>
+			<if test="repairerId != null">and repairer_id = #{repairerId}</if>
+			<if test="rating != null">and rating = #{rating}</if>
+			<if test="startTime != null and startTime != ''">and rep_date &gt;= concat(#{startTime}, ' 00:00:00')</if>
+			<if test="endTime != null and endTime != ''">and rep_date &lt;= concat(#{endTime}, ' 23:59:59')</if>
+		</where>
+	</sql>
+
+	<!-- 统计数据查询 -->
+	<select id="countByStatus" resultType="int">
+		select count(1) from tb_repair where rep_status = #{repStatus}
+	</select>
+
+	<select id="countByUrgency" resultType="int">
+		select count(1) from tb_repair where urgency = #{urgency}
+	</select>
+
+	<select id="countByRepairer" resultType="int">
+		select count(1) from tb_repair where repairer_id = #{repairerId}
+	</select>
+
+	<select id="avgRating" resultType="double">
+		select COALESCE(AVG(rating), 0) from tb_repair where rating is not null
+	</select>
+
+	<select id="countByRating" resultType="int">
+		select count(1) from tb_repair where rating = #{rating}
+	</select>
+
+	<!-- 近7日每日新增报修数量 -->
+	<select id="countTrendNew" resultType="map">
+		select date(rep_date) as stat_date, count(1) as cnt
+		from tb_repair
+		where rep_date &gt;= date_sub(curdate(), interval 6 day)
+		group by date(rep_date)
+	</select>
+
+	<!-- 近7日每日完成维修数量 -->
+	<select id="countTrendDone" resultType="map">
+		select date(completed_time) as stat_date, count(1) as cnt
+		from tb_repair
+		where completed_time is not null
+		  and completed_time &gt;= date_sub(curdate(), interval 6 day)
+		group by date(completed_time)
+	</select>
+
+</mapper>
