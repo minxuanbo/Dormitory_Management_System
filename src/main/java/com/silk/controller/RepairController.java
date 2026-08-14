@@ -299,7 +299,14 @@ public class RepairController {
         if (param.getUserType() != 2) {
             return Result.fail("无权限操作");
         }
-        return Result.ok(repairService.getStatistics());
+        Map<String, Object> stats = repairService.getStatistics();
+        // 管理员首页「数据预览」卡片所需字段（后端返回字段与前端读取字段对齐）
+        stats.put("totalCount", stats.get("total"));
+        stats.put("avgSatisfaction", repairService.avgRating());
+        User repairerQuery = new User();
+        repairerQuery.setUserType(1);
+        stats.put("repairerCount", userService.count(repairerQuery));
+        return Result.ok(stats);
     }
 
     @PostMapping("satisfaction")
