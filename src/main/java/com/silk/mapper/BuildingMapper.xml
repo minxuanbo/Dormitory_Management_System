@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.silk.mapper.BuildingMapper">
+
+    <resultMap id="buildingResult" type="com.silk.entity.Building">
+        <id property="id" column="id"/>
+        <result property="buildingName" column="building_name"/>
+        <result property="floorNum" column="floor_num"/>
+        <result property="liverGender" column="liver_gender"/>
+        <result property="managerId" column="manager_id"/>
+        <!-- 维修人员信息（前端模板使用 d.user.userName / d.user.phone） -->
+        <association property="user" javaType="com.silk.entity.User">
+            <id property="id" column="u_id"/>
+            <result property="userName" column="u_name"/>
+            <result property="phone" column="u_phone"/>
+        </association>
+    </resultMap>
+
+    <sql id="queryCondition">
+        <where>
+            <if test="id != null and id != ''">AND b.id = #{id}</if>
+            <if test="buildingName != null and buildingName != ''">AND b.building_name LIKE CONCAT('%', #{buildingName}, '%')</if>
+            <if test="floorNum != null and floorNum != ''">AND b.floor_num = #{floorNum}</if>
+            <if test="liverGender != null and liverGender != ''">AND b.liver_gender = #{liverGender}</if>
+            <if test="managerId != null and managerId != ''">AND b.manager_id = #{managerId}</if>
+        </where>
+    </sql>
+
+    <select id="query" resultMap="buildingResult">
+        SELECT b.*, u.id AS u_id, u.user_name AS u_name, u.phone AS u_phone
+        FROM tb_building b
+        LEFT JOIN tb_user u ON b.manager_id = u.id
+        <include refid="queryCondition"/>
+        ORDER BY b.id
+    </select>
+
+    <select id="detail" resultMap="buildingResult">
+        SELECT b.*, u.id AS u_id, u.user_name AS u_name, u.phone AS u_phone
+        FROM tb_building b
+        LEFT JOIN tb_user u ON b.manager_id = u.id
+        WHERE b.id = #{id}
+    </select>
+
+    <select id="queryFloorNum" resultType="java.lang.Integer">
+        SELECT floor_num FROM tb_building WHERE id = #{id}
+    </select>
+
+    <select id="queryLiverCount" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM tb_user u
+        INNER JOIN tb_room r ON u.room_id = r.id
+        WHERE r.building_id = #{buildingId}
+    </select>
+
+    <select id="queryTotalCapacity" resultType="java.lang.Integer">
+        SELECT IFNULL(SUM(room_capacity), 0) FROM tb_room WHERE building_id = #{buildingId}
+    </select>
+
+    <insert id="insert" parameterType="com.silk.entity.Building">
+        INSERT INTO tb_building (id, building_name, floor_num, liver_gender, manager_id)
+        VALUES (#{id}, #{buildingName}, #{floorNum}, #{liverGender}, #{managerId})
+    </insert>
+
+    <update id="updateSelective" parameterType="com.silk.entity.Building">
+        UPDATE tb_building
+        <set>
+            <if test="buildingName != null and buildingName != ''">building_name = #{buildingName},</if>
+            <if test="floorNum != null">floor_num = #{floorNum},</if>
+            <if test="liverGender != null">liver_gender = #{liverGender},</if>
+            <if test="managerId != null">manager_id = #{managerId},</if>
+        </set>
+        WHERE id = #{id}
+    </update>
+
+    <delete id="deleteByIds">
+        DELETE FROM tb_building WHERE id IN (${ids})
+    </delete>
+
+</mapper>

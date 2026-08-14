@@ -3,7 +3,7 @@
 
 
 <div class="layuimini-main">
-    <div class="layui-form layuimini-form" lay-filter="updateForm" style="width: 80%;margin-top: 20px;">
+    <div class="layui-form layuimini-form userForm" lay-filter="updateForm" style="width: 80%;margin-top: 20px;">
         <div class="layui-form-item">
             <label class="layui-form-label required">ID</label>
             <div class="layui-input-block">
@@ -36,17 +36,48 @@
             </div>
         </div>
         <div class="layui-form-item">
-            <label class="layui-form-label">房间</label>
+            <label class="layui-form-label">联系电话</label>
             <div class="layui-input-block">
-                <input type="text" name="roomId" placeholder="房间" value="" class="layui-input">
+                <input type="text" name="phone" placeholder="联系电话" value="" class="layui-input">
             </div>
         </div>
         <div class="layui-form-item">
+            <label class="layui-form-label">楼栋</label>
+            <div class="layui-input-block">
+                <select name="buildingId" id="buildingSelect" lay-filter="buildingSelect">
+                    <option value="">请选择楼栋</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item" id="floorFormItem" style="display:none;">
+            <label class="layui-form-label">楼层</label>
+            <div class="layui-input-block">
+                <select name="floor" id="floorSelect" lay-filter="floorSelect">
+                    <option value="">请选择楼层</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item" id="roomFormItem" style="display:none;">
+            <label class="layui-form-label">房间</label>
+            <div class="layui-input-block">
+                <select name="roomId" id="roomSelect">
+                    <option value="">请选择房间</option>
+                </select>
+            </div>
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">密码</label>
+            <div class="layui-input-block">
+                <input type="password" name="userPwd" placeholder="留空则不修改密码" value="" class="layui-input" autocomplete="new-password">
+                <tip>如需手动修改密码请填写新密码，留空保持原密码不变</tip>
+            </div>
+        </div>
+        <div class="layui-form-item userTypeFormItem">
             <label class="layui-form-label required">角色</label>
             <div class="layui-input-block">
                 <select name="userType" lay-verify="required">
                     <option value="0">学生👨🏻‍🎓</option>
-                    <option value="1">宿管员👵🏻</option>
+                    <option value="1">维修人员🔧</option>
                     <option value="2">后勤中心🏫</option>
                 </select>
             </div>
@@ -74,8 +105,112 @@
          */
         form.render();
 
+        // 从 URL 读取 userType 参数（维修人员管理=1 / 学生管理=0），固定角色不可改
+        var urlParams = new URLSearchParams(location.search);
+        var urlUserType = urlParams.get('userType');
+        if (urlUserType !== null && urlUserType !== '') {
+            $('.userTypeFormItem').hide();
+            $('<input type="hidden" name="userType" value="' + urlUserType + '">').appendTo('.userForm');
+        }
+
         let parentIndex = layer.index;                      // 当前弹出层，防止ID被覆盖
 
+        // ===== 宿舍选择：楼栋 → 楼层 → 房间（编辑时自动回显）=====
+        var buildingList = [];
+        var buildingLoaded = false;
+        var pendingRoomId = null;
+
+        function loadBuildings() {
+            axios.post('building/query', 'page=1&limit=100').then(function (res) {
+                if (res.code === 200 && res.data) {
+                    buildingList = res.data;
+                    buildingLoaded = true;
+                    var html = '<option value="">请选择楼栋</option>';
+                    buildingList.forEach(function (b) {
+                        html += '<option value="' + b.id + '">' + b.buildingName + '（' + (b.floorNum || 0) + '层）</option>';
+                    });
+                    $('#buildingSelect').html(html);
+                    form.render('select');
+                    // 楼栋加载完成后，若存在待回显房间则执行回显
+                    if (pendingRoomId) {
+                        echoRoom(pendingRoomId);
+                    }
+                }
+            });
+        }
+
+        function loadFloors(buildingId, selectedFloor) {
+            var floorNum = 1;
+            buildingList.forEach(function (b) {
+                if (String(b.id) === String(buildingId)) {
+                    floorNum = b.floorNum || 1;
+                }
+            });
+            var html = '<option value="">请选择楼层</option>';
+            for (var f = 1; f <= floorNum; f++) {
+                html += '<option value="' + f + '"' + (selectedFloor == f ? ' selected' : '') + '>' + f + ' 楼</option>';
+            }
+            $('#floorSelect').html(html);
+            $('#floorFormItem').show();
+            form.render('select');
+        }
+
+        function loadRooms(buildingId, floor, selectedRoomId) {
+            axios.post('room/query', {buildingId: buildingId, floor: floor}).then(function (res) {
+                if (res.code === 200 && res.data) {
+                    var html = '<option value="">请选择房间</option>';
+                    res.data.forEach(function (r) {
+                        var sel = String(r.id) === String(selectedRoomId) ? ' selected' : '';
+                        html += '<option value="' + r.id + '"' + sel + '>' + r.floor + '楼 ' + r.brand + '（' + (r.roomCapacity || 0) + '人）</option>';
+                    });
+                    $('#roomSelect').html(html);
+                    $('#roomFormItem').show();
+                    form.render('select');
+                }
+            });
+        }
+
+        // 编辑回显：根据房间ID反查楼栋/楼层并选中
+        function echoRoom(roomId) {
+            if (!roomId) return;
+            axios.post('room/query', {id: roomId}).then(function (res) {
+                if (res.code === 200 && res.data && res.data.length > 0) {
+                    var room = res.data[0];
+                    $('#buildingSelect').val(String(room.buildingId));
+                    form.render('select');
+                    loadFloors(room.buildingId, room.floor);
+                    loadRooms(room.buildingId, room.floor, roomId);
+                }
+            });
+        }
+
+        // 由列表页 setFormValue 在赋值后调用（同一 window 环境）
+        window.prepareUpdateRoom = function (roomId) {
+            pendingRoomId = roomId;
+            if (buildingLoaded && roomId) {
+                echoRoom(roomId);
+            }
+        };
+
+        loadBuildings();
+
+        form.on('select(buildingSelect)', function (data) {
+            if (data.value) {
+                loadFloors(data.value);
+                $('#roomSelect').html('<option value="">请选择房间</option>');
+                $('#roomFormItem').hide();
+                form.render('select');
+            } else {
+                $('#floorFormItem, #roomFormItem').hide();
+            }
+        });
+
+        form.on('select(floorSelect)', function (data) {
+            var bid = $('#buildingSelect').val();
+            if (bid && data.value) {
+                loadRooms(bid, data.value);
+            }
+        });
 
         //监听提交
         form.on('submit(saveBtn)', function (data) {

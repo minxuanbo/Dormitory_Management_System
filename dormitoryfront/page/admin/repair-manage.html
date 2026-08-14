@@ -154,6 +154,10 @@
                     <td style="font-weight:bold;background:#f8f8f8;">描述</td>
                     <td colspan="3" id="detailDesc"></td>
                 </tr>
+                <tr id="imagesTr" style="display:none;">
+                    <td style="font-weight:bold;background:#f8f8f8;">报修图片</td>
+                    <td colspan="3" id="detailImages"></td>
+                </tr>
                 <tr id="evaluateTr" style="display:none;">
                     <td style="font-weight:bold;background:#f8f8f8;">评分</td>
                     <td id="detailRate"></td>
@@ -208,15 +212,15 @@
                     }
                 },
                 {
-                    field: 'buildingRoom', width: 130, title: '楼栋房间', templet: function (row) {
-                        var building = row.buildingId ? row.buildingId + '栋' : '';
+                    field: 'buildingRoom', width: 150, title: '楼栋房间', templet: function (row) {
+                        var building = (row.building && row.building.buildingName) ? row.building.buildingName : (row.buildingId ? row.buildingId + '栋' : '');
                         var room = '';
                         if (row.room && row.room.brand) {
-                            room = row.room.brand;
+                            room = (row.room.floor != null ? row.room.floor + '楼' : '') + row.room.brand;
                         } else if (row.roomId) {
                             room = row.roomId + '号';
                         }
-                        return building + room || '--';
+                        return (building + ' ' + room).trim() || '--';
                     }
                 },
                 {
@@ -392,21 +396,42 @@
                         var studentName = '--';
                         if (data.user && data.user.userName) studentName = data.user.userName;
                         else if (data.stuId) studentName = data.stuId;
-                        $('#detailStudent').text(studentName);
+                        if (data.user && data.user.phone) studentName += '<br>电话：' + data.user.phone;
+                        $('#detailStudent').html(studentName);
 
-                        var building = data.buildingId ? data.buildingId + '栋' : '';
+                        var building = (data.building && data.building.buildingName) ? data.building.buildingName : (data.buildingId ? data.buildingId + '栋' : '');
                         var room = '';
-                        if (data.room && data.room.brand) room = data.room.brand;
-                        else if (data.roomId) room = data.roomId + '号';
-                        $('#detailRoom').text(building + room || '--');
+                        if (data.room && data.room.brand) {
+                            room = (data.room.floor != null ? data.room.floor + '楼' : '') + data.room.brand;
+                        } else if (data.roomId) room = data.roomId + '号';
+                        $('#detailRoom').html((building + ' ' + room).trim() || '--');
 
                         var repairerName = '未指派';
                         if (data.repairer && data.repairer.userName) repairerName = data.repairer.userName;
                         else if (data.repairerId) repairerName = data.repairerId;
-                        $('#detailRepairer').text(repairerName);
+                        if (data.repairer && data.repairer.phone) repairerName += '<br>电话：' + data.repairer.phone;
+                        $('#detailRepairer').html(repairerName);
 
                         $('#detailTime').text(data.repDate || data.submitTime || '--');
                         $('#detailDesc').text(data.description || '无');
+
+                        // 渲染报修图片（逗号分隔的URL列表）
+                        if (data.images) {
+                            var imgList = data.images.split(',').filter(function (img) {
+                                return img && img.trim() !== '';
+                            });
+                            if (imgList.length > 0) {
+                                var imgHtml = '';
+                                imgList.forEach(function (img) {
+                                    img = img.trim();
+                                    imgHtml += '<img src="' + img + '" style="width:80px;height:80px;object-fit:cover;' +
+                                        'margin:0 6px 6px 0;border-radius:4px;cursor:pointer;border:1px solid #eee;" ' +
+                                        'onclick="window.open(\'' + img + '\')" onerror="this.style.display=\'none\'">';
+                                });
+                                $('#imagesTr').show();
+                                $('#detailImages').html(imgHtml);
+                            }
+                        }
 
                         if (data.repStatus === 4 || data.rating || data.feedback) {
                             $('#evaluateTr').show();

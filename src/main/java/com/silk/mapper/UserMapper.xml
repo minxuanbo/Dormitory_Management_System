@@ -7,9 +7,14 @@
 		<result column="user_pwd"  property="userPwd"/>
 		<result column="user_name"  property="userName"/>
 		<result column="gender"  property="gender"/>
+		<result column="phone"  property="phone"/>
 		<result column="email"  property="email"/>
 		<result column="room_id"  property="roomId"/>
 		<result column="user_type"  property="userType"/>
+		<!-- 宿舍信息（查询时JOIN展示） -->
+		<result column="b_building_name" property="buildingName"/>
+		<result column="r_brand" property="roomBrand"/>
+		<result column="r_floor" property="roomFloor"/>
 	</resultMap>
 
 	<insert id="create" parameterType="com.silk.entity.User">
@@ -18,6 +23,7 @@
 			user_pwd,
 			user_name,
 			gender,
+			phone,
 			email,
 			room_id,
 			user_type
@@ -26,6 +32,7 @@
 			#{userPwd},
 			#{userName},
 			#{gender},
+			#{phone},
 			#{email},
 			#{roomId},
 			#{userType}
@@ -33,7 +40,12 @@
 	</insert>
 
 	<select id="query" resultMap="User">
-		select * from tb_user
+		select u.*,
+		       b.building_name as b_building_name,
+		       ro.brand as r_brand, ro.floor as r_floor
+		from tb_user u
+		left join tb_room ro on u.room_id = ro.id
+		left join tb_building b on ro.building_id = b.id
 		<include refid="UserFindCriteria"/>
 	</select>
 
@@ -55,6 +67,7 @@
 			user_pwd=#{userPwd},
 			user_name=#{userName},
 			gender=#{gender},
+			phone=#{phone},
 			email=#{email},
 			room_id=#{roomId},
 			user_type=#{userType}
@@ -67,6 +80,7 @@
 			<if test="userPwd != null and userPwd != ''"> user_pwd = #{userPwd},</if>
 			<if test="userName != null and userName != ''"> user_name = #{userName},</if>
 			<if test="gender != null">gender = #{gender},</if>
+			<if test="phone != null and phone != ''"> phone = #{phone},</if>
 			<if test="email != null and email != ''"> email = #{email},</if>
 			<if test="roomId != null">room_id = #{roomId},</if>
 			<if test="userType != null">user_type = #{userType},</if>
@@ -90,7 +104,7 @@
 
 
 	<select id="login" resultMap="User">
-		select * from tb_user where user_name = #{userName} and user_pwd = #{userPwd}
+		select * from tb_user where (user_name = #{userName} or id = #{userName}) and user_pwd = #{userPwd}
 	</select>
 
 

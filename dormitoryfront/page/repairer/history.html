@@ -71,10 +71,27 @@
                 <tr><td>报修描述</td><td>{{d.description}}</td></tr>
                 <tr><td>紧急度</td><td>{{# if(d.urgency === 2){ }}<span class="layui-badge layui-bg-red">非常紧急</span>{{# } else if(d.urgency === 1){ }}<span class="layui-badge layui-bg-orange">紧急</span>{{# } else { }}<span class="layui-badge layui-bg-blue">普通</span>{{# } }}</td></tr>
                 <tr><td>学生</td><td>{{d.stuName || (d.user ? d.user.userName : '-')}}</td></tr>
+                <tr><td>学生电话</td><td>{{d.user && d.user.phone ? d.user.phone : '-'}}</td></tr>
                 <tr><td>楼栋</td><td>{{d.buildingName || (d.building ? d.building.buildingName : (d.buildingId ? d.buildingId + '栋' : '-'))}}</td></tr>
                 <tr><td>房间</td><td>{{d.roomName || (d.room ? d.room.brand : (d.roomId ? d.roomId + '室' : '-'))}}</td></tr>
                 <tr><td>状态</td><td>{{# if(d.repStatus === 0){ }}<span class="layui-badge layui-bg-gray">待指派</span>{{# } else if(d.repStatus === 1){ }}<span class="layui-badge layui-bg-orange">待接单</span>{{# } else if(d.repStatus === 2){ }}<span class="layui-badge layui-bg-blue">维修中</span>{{# } else if(d.repStatus === 3){ }}<span class="layui-badge layui-bg-green">已完成</span>{{# } else if(d.repStatus === 4){ }}<span class="layui-badge layui-bg-cyan">已评价</span>{{# } }}</td></tr>
                 <tr><td>提交时间</td><td>{{d.repDate}}</td></tr>
+                {{# if(d.images){
+                    var imgs = d.images.split(',');
+                }}
+                <tr><td>报修图片</td><td>
+                {{# if(imgs.length > 0){
+                    for(var i = 0; i < imgs.length; i++){
+                        if(imgs[i] && imgs[i].trim() !== ''){
+                }}
+                <img src="{{= imgs[i].trim() }}" style="width:80px;height:80px;object-fit:cover;margin:0 6px 6px 0;border-radius:4px;cursor:pointer;border:1px solid #eee;" onclick="window.open('{{= imgs[i].trim() }}')" onerror="this.style.display='none'">
+                {{# }
+                    }
+                } else { }}
+                -
+                {{# } }}
+                </td></tr>
+                {{# } }}
                 {{# if(d.repairRecord){ }}<tr><td>维修记录</td><td>{{d.repairRecord}}</td></tr>{{# } }}
                 {{# if(d.completedTime){ }}<tr><td>完成时间</td><td>{{d.completedTime}}</td></tr>{{# } }}
                 {{# if(d.feedback){ }}<tr><td>评价内容</td><td>{{d.feedback}}</td></tr>{{# } }}
@@ -149,7 +166,10 @@
                     {field: 'stuName', width: 100, title: '学生', templet: function(row) {
                             return row.stuName || (row.user ? row.user.userName : '-');
                         }},
-                    {field: 'location', width: 140, title: '楼栋房间', templet: function(row) {
+                    {field: 'stuPhone', width: 130, title: '学生电话', templet: function(row) {
+                            return (row.user && row.user.phone) ? row.user.phone : '-';
+                        }},
+                    {field: 'location', width: 150, title: '楼栋房间', templet: function(row) {
                             var building = row.buildingName || (row.building ? row.building.buildingName : (row.buildingId ? row.buildingId + '栋' : ''));
                             var room = row.roomName || (row.room ? row.room.brand : (row.roomId ? row.roomId + '室' : ''));
                             return building + ' ' + room;

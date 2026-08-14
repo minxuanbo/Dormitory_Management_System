@@ -2,7 +2,7 @@
     <div class="layuimini-main">
 
         <div style="margin: 10px 10px 10px 10px">
-            <form class="layui-form layui-form-pane" action="">
+            <form class="layui-form layui-form-pane" id="searchForm" action="">
                 <div class="layui-form-item">
                     <div class="layui-inline">
                         <label class="layui-form-label">学号/工号</label>
@@ -18,12 +18,16 @@
                         </div>
                     </div>
 
-<!--                    <div class="layui-inline">-->
-<!--                        <label class="layui-form-label">用户类型</label>-->
-<!--                        <div class="layui-input-inline">-->
-<!--                            <input type="text" name="userType" autocomplete="off" class="layui-input">-->
-<!--                        </div>-->
-<!--                    </div>-->
+                    <div class="layui-inline" id="userTypeSearchWrap">
+                        <label class="layui-form-label">用户类型</label>
+                        <div class="layui-input-inline">
+                            <select name="userType" id="userTypeSearch">
+                                <option value="">全部类型</option>
+                                <option value="0">学生</option>
+                                <option value="1">维修人员</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="layui-inline">
                         <button type="submit" class="layui-btn layui-btn-primary"  lay-submit lay-filter="data-search-btn"><i class="layui-icon"></i> 搜 索</button>
                     </div>
@@ -43,6 +47,9 @@
                 <button class="layui-btn layui-btn-sm layui-btn-danger data-delete-btn" lay-event="delete">
                     <i class="layui-icon layui-icon-delete"></i>删除
                 </button>
+                <button class="layui-btn layui-btn-sm layui-btn-warm" lay-event="resetPwd">
+                    <i class="layui-icon layui-icon-password"></i>重置密码
+                </button>
             </div>
         </script>
 
@@ -57,17 +64,32 @@
 </div>
 
 <script>
-    layui.use(['form', 'table','miniPage','miniAdmin','element'], function () {
+    layui.use(['form', 'table','miniPage','miniAdmin','element','axios','layer'], function () {
         var $ = layui.jquery,
             form = layui.form,
             table = layui.table,
+            layer = layui.layer,
+            axios = layui.axios,
             miniAdmin = layui.miniAdmin,
             miniPage = layui.miniPage;
+
+        // 从 URL 读取 userType 参数：维修人员管理(userType=1) / 学生管理(userType=0)
+        var urlParams = new URLSearchParams(location.search);
+        var urlUserType = urlParams.get('userType');
+        var fixedWhere = {};
+        if (urlUserType !== null && urlUserType !== '') {
+            urlUserType = String(urlUserType);
+            // 移除类型下拉，用隐藏域固定类型，避免查询范围被改变
+            $('#userTypeSearchWrap').remove();
+            $('<input type="hidden" name="userType" value="' + urlUserType + '">').appendTo('#searchForm');
+            fixedWhere.userType = parseInt(urlUserType, 10);
+        }
 
         table.render({
             elem: '#currentTableId',
             method: 'post',
             url: API_BASE + '/user/query',
+            where: fixedWhere,
             toolbar: '#toolbarDemo',
             defaultToolbar: ['filter', 'exports', 'print'],
             cols: [[
@@ -81,13 +103,18 @@
                             return '<span class=\"layui-badge layui-bg-silk-blue\">男</span>';
                         }
                     }},
-                {field: 'email', title: '邮箱'},
-                {field: 'roomId', title: '房间ID', minWidth: 150},
+                {field: 'phone', title: '联系电话', minWidth: 130},
+                {field: 'roomId', title: '宿舍', minWidth: 200, templet: function (row) {
+                        if (row.buildingName || row.roomBrand) {
+                            return (row.buildingName || '') + ' ' + (row.roomFloor != null ? row.roomFloor + '楼' : '') + (row.roomBrand || ('（' + row.roomId + '）'));
+                        }
+                        return row.roomId ? ('（' + row.roomId + '）') : '-';
+                    }},
                 {field: 'userType', title: '用户类型', sort: true, templet:function (row) {
                         if (row.userType === 0){
-                            return '学生';
+                            return '<span class="layui-badge layui-bg-silk-green">学生</span>';
                         } else if (row.userType === 1){
-                            return '<span class="layui-badge layui-bg-blue">宿管员</span>';
+                            return '<span class="layui-badge layui-bg-blue">维修人员</span>';
                         } else if (row.userType === 2){
                             return '<span class="layui-badge layui-bg-orange">后勤中心</span>';
                         }
@@ -129,7 +156,8 @@
          */
         table.on('toolbar(currentTableFilter)', function (obj) {
             if (obj.event === 'add') {                                      // 🌸监听添加操作
-                let content = miniPage.getHrefContent('user/add.html');     // ajax异步获取
+                let url = 'user/add.html' + (urlUserType !== null && urlUserType !== '' ? '?userType=' + urlUserType : '');
+                let content = miniPage.getHrefContent(url);                 // ajax异步获取
                 let openWH = miniPage.getOpenWidthHeight();
                 let index = layer.open({
                     title: '添加用户',
@@ -151,7 +179,8 @@
                 } else if (data.length !== 1) {
                     layer.msg("只能选择一条数据进行修改");
                 } else {
-                    let content = miniPage.getHrefContent('user/update.html');     // ajax异步获取
+                    let url = 'user/update.html' + (urlUserType !== null && urlUserType !== '' ? '?userType=' + urlUserType : '');
+                    let content = miniPage.getHrefContent(url);                 // ajax异步获取
                     let openWH = miniPage.getOpenWidthHeight();
                     let index = layer.open({
                         title: '编辑用户',
@@ -168,7 +197,7 @@
                         layer.full(index);
                     });
                 }
-            } else if (obj.event === 'delete') {                            // 🌸监听修改操作
+            } else if (obj.event === 'delete') {                            // 🌸监听删除操作
                 let data = table.checkStatus('currentTableId').data;
                 if (data.length === 0){
                     layer.msg("还没有选中数据");
@@ -185,6 +214,54 @@
                         layer.close(index);
                     })
                 }
+            } else if (obj.event === 'resetPwd') {                          // 🌸监听重置密码操作
+                let data = table.checkStatus('currentTableId').data;
+                if (data.length === 0){
+                    layer.msg("还没有选中数据");
+                } else if (data.length !== 1) {
+                    layer.msg("只能选择一条数据进行重置");
+                } else {
+                    let user = data[0];
+                    layer.open({
+                        title: '重置密码 - ' + user.userName + '（' + user.id + '）',
+                        type: 1,
+                        shade: 0.3,
+                        shadeClose: true,
+                        area: ['420px', '280px'],
+                        content: '<div style="padding:25px 30px;">' +
+                            '<div class="layui-form-item">' +
+                            '<label class="layui-form-label" style="width:90px;">新密码</label>' +
+                            '<div class="layui-input-block" style="margin-left:120px;">' +
+                            '<input type="text" id="newPwdInput" class="layui-input" placeholder="请输入新密码" autocomplete="off">' +
+                            '</div></div>' +
+                            '<div class="layui-form-item" style="margin-top:20px;text-align:center;">' +
+                            '<button class="layui-btn" id="resetPwdBtn"><i class="layui-icon layui-icon-password"></i> 确认重置</button>' +
+                            '</div>' +
+                            '</div>',
+                        success: function (layero) {
+                            layero.find('#resetPwdBtn').on('click', function () {
+                                let newPwd = layero.find('#newPwdInput').val().trim();
+                                if (!newPwd) {
+                                    layer.msg('请输入新密码', {icon: 2});
+                                    return;
+                                }
+                                let loadIndex = layer.load(2);
+                                axios.post('user/update', {id: user.id, userPwd: newPwd}).then(function (res) {
+                                    layer.close(loadIndex);
+                                    if (res.code === 200) {
+                                        layer.msg('密码重置成功', {icon: 1});
+                                        layer.closeAll();
+                                    } else {
+                                        layer.msg(res.msg || '重置失败', {icon: 2});
+                                    }
+                                }).catch(function () {
+                                    layer.close(loadIndex);
+                                    layer.msg('请求失败，请重试', {icon: 2});
+                                });
+                            });
+                        }
+                    });
+                }
             }
         });
 
@@ -195,9 +272,14 @@
                 userName: data.userName,
                 gender: data.gender,
                 email: data.email,
+                phone: data.phone,
                 roomId: data.roomId,
                 userType: data.userType,
-            })
+            });
+            // 通知编辑弹窗回显宿舍（楼栋/楼层/房间下拉）
+            if (typeof prepareUpdateRoom === 'function') {
+                prepareUpdateRoom(data.roomId);
+            }
         }
         
         

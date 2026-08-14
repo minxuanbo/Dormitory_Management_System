@@ -50,6 +50,12 @@ public class Repair extends Entity{
 	// 维修人员信息（用于前端展示）
 	private User repairer;
 
+	// 楼栋信息（用于前端展示楼栋名称）
+	private Building building;
+
+	// 房间信息（用于前端展示楼层/门牌号）
+	private Room room;
+
 	// === 查询筛选字段（不参与实体存储） ===
 	private String keyword;			// 关键字（匹配报修项目/故障描述）
 	private String repStatuses;		// 多状态查询，逗号分隔，如 "3,4"
@@ -216,6 +222,22 @@ public class Repair extends Entity{
 
 	public void setRepairer(User repairer) {
 		this.repairer = repairer;
+	}
+
+	public Building getBuilding() {
+		return building;
+	}
+
+	public void setBuilding(Building building) {
+		this.building = building;
+	}
+
+	public Room getRoom() {
+		return room;
+	}
+
+	public void setRoom(Room room) {
+		this.room = room;
 	}
 
 	public String getKeyword() {

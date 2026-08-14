@@ -29,6 +29,11 @@
                 <span style="float:right;font-size:12px;color:#999;font-weight:normal;">请如实填写报修信息，带 <span style="color:#f5222d;">*</span> 为必填项</span>
             </div>
             <form class="layui-form" lay-filter="repairAddForm">
+                <div id="dormInfoBar" class="layui-form-item" style="display:none;background:#f0f7ff;border:1px dashed #1e9fff;border-radius:4px;padding:12px 15px;color:#555;margin-bottom:20px;">
+                    <i class="fa fa-home" style="color:#1e9fff;margin-right:6px;"></i>
+                    当前宿舍：<span id="dormInfoText" style="color:#1e9fff;font-weight:bold;">加载中...</span>
+                    <div style="margin-top:5px;font-size:12px;color:#999;">维修人员将根据此地址上门维修，如有变动请联系管理员修改</div>
+                </div>
                 <div class="layui-form-item">
                     <label class="layui-form-label">报修物品<span style="color:#f5222d;">*</span></label>
                     <div class="layui-input-block">
@@ -103,14 +108,32 @@
 </div>
 
 <script>
-    layui.use(['form', 'upload', 'axios', 'layer', 'miniPage'], function () {
+    layui.use(['form', 'upload', 'axios', 'layer', 'miniPage', 'storage'], function () {
         var $ = layui.jquery,
             form = layui.form,
             upload = layui.upload,
             axios = layui.axios,
-            layer = layui.layer;
+            layer = layui.layer,
+            storage = layui.storage;
 
         form.render();
+
+        // 显示当前学生宿舍信息（楼栋名 + 楼层房间号），方便确认上门地址
+        var curUser = storage.get('user');
+        if (curUser && curUser.roomId) {
+            axios.post('room/query', {id: curUser.roomId}).then(function (res) {
+                if (res.code === 200 && res.data && res.data.length > 0) {
+                    var room = res.data[0];
+                    axios.post('building/query', 'id=' + room.buildingId + '&page=1&limit=1').then(function (bres) {
+                        var bName = (bres.code === 200 && bres.data && bres.data.length > 0)
+                            ? bres.data[0].buildingName
+                            : (room.buildingId + '栋');
+                        $('#dormInfoText').html(bName + ' ' + room.floor + '楼 ' + room.brand);
+                        $('#dormInfoBar').show();
+                    });
+                }
+            });
+        }
 
         var uploadedImages = [];
 

@@ -19,12 +19,16 @@
                         </div>
                     </div>
 
-<!--                    <div class="layui-inline">-->
-<!--                        <label class="layui-form-label">用户类型</label>-->
-<!--                        <div class="layui-input-inline">-->
-<!--                            <input type="text" name="userType" autocomplete="off" class="layui-input">-->
-<!--                        </div>-->
-<!--                    </div>-->
+                    <div class="layui-inline">
+                        <label class="layui-form-label">学生性别</label>
+                        <div class="layui-input-inline">
+                            <select name="liverGender">
+                                <option value="">全部</option>
+                                <option value="1">男</option>
+                                <option value="0">女</option>
+                            </select>
+                        </div>
+                    </div>
                     <div class="layui-inline">
                         <button type="submit" class="layui-btn layui-btn-primary"  lay-submit lay-filter="data-search-btn"><i class="layui-icon"></i> 搜 索</button>
                     </div>
@@ -58,12 +62,14 @@
 </div>
 
 <script>
-    layui.use(['form', 'table','miniPage','miniAdmin','element'], function () {
+    layui.use(['form', 'table','miniPage','miniAdmin','element','axios'], function () {
         var $ = layui.jquery,
             form = layui.form,
             table = layui.table,
             miniAdmin = layui.miniAdmin,
             miniPage = layui.miniPage;
+
+        form.render('select');       // 渲染性别下拉框
 
         table.render({
             elem: '#currentTableId',
@@ -86,13 +92,15 @@
                             return "<span class=\"layui-badge layui-bg-silk-blue\">男</span>";
                         }
                     }},
-                {field: 'managerId', title: '宿管员ID', minWidth: 150},
+                {field: 'managerId', title: '维修人员ID', minWidth: 150},
 
                 /**
                  * @imp 获取用户姓名
-                 * @silkTag 楼栋->根据楼栋表管理员ID，查用户表对应的管理员名字
+                 * @silkTag 楼栋->根据楼栋表维修人员ID，查用户表对应的维修人员名字
                  */
-                {field: 'managerName', title: '宿管员姓名', templet:'<div>{{d.user.userName}}</div>'}
+                {field: 'managerName', title: '维修人员姓名', templet: function (d) {
+                        return '<div>' + (d.user ? d.user.userName : '-') + '</div>';   // user 可能为 null（楼栋未分配维修人员）
+                    }}
             ]],
             limits: [10, 15, 20, 30, 50, 100],
             limit: 10,

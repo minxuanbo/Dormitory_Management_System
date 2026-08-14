@@ -31,7 +31,7 @@
         </div>
 
         <div class="layui-form-item">
-            <label class="layui-form-label required">宿管员</label>
+            <label class="layui-form-label required">维修人员</label>
             <div class="layui-input-block">
 <!--                做一个隐藏的临时值 -->
                 <input type="hidden" id="managerHiddenId">
@@ -77,8 +77,8 @@
         }
 
         // 重点：从后端获取类型为1的用户信息，以备后续使用
-        axios.post('user/query',{userType:1}).then(function (response) {
-            let options = '<option value"">请选择宿管员</option>'
+        axios.post('user/query','userType=1').then(function (response) {
+            let options = '<option value"">请选择维修人员</option>'
             // console.log($('#managerHiddenId').val());
             for (let obj of response.data){
                 if (obj.id == $('#managerHiddenId').val()){

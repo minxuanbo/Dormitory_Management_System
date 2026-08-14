@@ -2,8 +2,10 @@ package com.silk.controller;
 
 import com.github.pagehelper.PageInfo;
 import com.silk.entity.Repair;
+import com.silk.entity.Room;
 import com.silk.entity.User;
 import com.silk.service.RepairService;
+import com.silk.service.RoomService;
 import com.silk.service.UserService;
 import com.silk.utils.Result;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,6 +25,8 @@ public class RepairController {
     private RepairService repairService;
     @Autowired
     private UserService userService;
+    @Autowired
+    private RoomService roomService;
 
     @PostMapping("create")
     public Result create(@RequestBody Repair repair){
@@ -129,8 +133,14 @@ public class RepairController {
         User student = userService.detail(param.getId());
         if (student != null && student.getRoomId() != null) {
             repair.setRoomId(student.getRoomId());
-            // 楼栋ID按房间号约定推导：房间号如 100101 → 1号楼（roomId / 100000）
-            repair.setBuildingId(student.getRoomId() / 100000);
+            // 楼栋ID优先从房间表关联查询（兼容任意楼栋编号，如13栋130701）
+            Room room = roomService.detail(student.getRoomId());
+            if (room != null && room.getBuildingId() != null) {
+                repair.setBuildingId(room.getBuildingId());
+            } else {
+                // 兜底兼容旧数据：房间号如 100101 → 1号楼
+                repair.setBuildingId(student.getRoomId() / 100000);
+            }
             repair.setStuId(param.getId());
             repair.setRepStatus(0);
             repair.setRepDate(new Date());

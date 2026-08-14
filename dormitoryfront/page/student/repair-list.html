@@ -226,12 +226,22 @@
                 ratingHtml += '<div class="detail-row"><span class="detail-label">评价内容：</span><span class="detail-value">'+data.feedback+'</span></div>';
             }
 
+            // 维修人员及其联系电话（方便学生与维修人员电话联系）
+            var repairerInfo = '';
+            if (data.repairer && (data.repairer.userName || data.repairer.phone)) {
+                repairerInfo = '<div class="detail-row"><span class="detail-label">维修人员：</span><span class="detail-value">'+(data.repairer.userName||'-')+'</span></div>';
+                if (data.repairer.phone) {
+                    repairerInfo += '<div class="detail-row"><span class="detail-label">联系电话：</span><span class="detail-value"><a href="tel:'+data.repairer.phone+'" style="color:#1e9fff;">'+data.repairer.phone+'</a></span></div>';
+                }
+            }
+
             var html = '<div style="padding:20px;max-width:600px;">' +
                 '<div class="detail-row"><span class="detail-label">报修ID：</span><span class="detail-value">'+(data.id||'-')+'</span></div>' +
                 '<div class="detail-row"><span class="detail-label">报修物品：</span><span class="detail-value">'+(data.repItem||'-')+'</span></div>' +
                 '<div class="detail-row"><span class="detail-label">报修状态：</span><span class="detail-value">'+getStatusFullText(data.repStatus)+'</span></div>' +
                 '<div class="detail-row"><span class="detail-label">紧急程度：</span><span class="detail-value">'+getUrgencyFullText(data.urgency)+'</span></div>' +
                 '<div class="detail-row"><span class="detail-label">提交时间：</span><span class="detail-value">'+(data.repDate||'-')+'</span></div>' +
+                repairerInfo +
                 imagesHtml +
                 '<div class="detail-row"><span class="detail-label">详细描述：</span><div class="detail-value" style="display:inline-block;vertical-align:top;max-width:440px;word-break:break-all;">'+(data.description||'-')+'</div></div>' +
                 ratingHtml +

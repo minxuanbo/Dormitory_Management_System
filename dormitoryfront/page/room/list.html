@@ -60,7 +60,7 @@
          * @silkTag 1. 获取楼栋信息
          */
         function loadBuilding(){
-            axios.post('building/query', {}).then(function (response) {
+            axios.post('building/query').then(function (response) {
                 console.log(response.data);
                 // 遍历后端返回数据，将楼栋信息装到每一个Button中
                 response.data.forEach(item=>{
@@ -323,83 +323,93 @@
         function loadBed(roomId, bedObj) {
             console.log(roomId, bedObj);
 
-
             var liverAmount;
+            var livers = [];       // 该房间已入住的学生列表（第 N 个学生对应第 N 号床位）
 
-            axios.get('room/query_liver_amount?id=' + roomId).then(function (response) {
-                liverAmount = response.data;
+            // 先获取该房间已入住的学生信息（用于点击床位查看）
+            axios.get('room/query_livers?id=' + roomId).then(function (liverResp) {
+                livers = liverResp.data;
 
-                axios.post('room/query',{"id": roomId}).then(function (response) {
-                    bedObj.empty();
-                    console.log(response.data[0].roomCapacity);
+                axios.get('room/query_liver_amount?id=' + roomId).then(function (response) {
+                    liverAmount = response.data;
 
-                    for (let bedNo = 1; bedNo <= response.data[0].roomCapacity; bedNo++){
-                        let html;
+                    axios.post('room/query',{"id": roomId}).then(function (response) {
+                        bedObj.empty();
+                        console.log(response.data[0].roomCapacity);
 
-                        if (bedNo <= liverAmount){
-                            html=`
-                        <li>
+                        for (let bedNo = 1; bedNo <= response.data[0].roomCapacity; bedNo++){
+                            let html;
 
-                            <img class="silk-bed-image" src="../images/bed_active.png"/>
-                            <p style="margin-top: 15px;">床位${bedNo}</p>
-                            <!--<p style="margin-top: 20px;">
-                                <i class="layui-icon layui-icon-edit" title="编辑床位"></i>
-                            </p>-->
-                        </li>
-                    `;
+                            if (bedNo <= liverAmount){
+                                // 已住床位：绑定点击事件查看该学生信息（便于管理员知晓联系方式）
+                                let liver = livers[bedNo - 1] || null;
+                                html=`
+                            <li style="cursor: pointer;">
 
-                            let htmlObj = $(html);
+                                <img class="silk-bed-image" src="../images/bed_active.png"/>
+                                <p style="margin-top: 15px;">床位${bedNo}${liver ? '<br><small style="color:#16baaa;">' + liver.userName + '</small>' : ''}</p>
+                            </li>
+                        `;
 
-                            // 点击删除床位
-                            htmlObj.find('.silk-bed-delete').click(function (event) {
-                                event.stopPropagation();
+                                let htmlObj = $(html);
 
-                                layer.confirm("确定要删除吗？", function (index) {
-                                    axios.get('room/capacity_minus_one?id='+ roomId).then(function (response) {
-                                        htmlObj.remove();
-                                        layer.msg(response.msg);
-                                        layer.close(index);
-                                        loadBed(roomId, bedObj);   // 重新加载房间中的床
-                                    }).catch(function (error) {
-                                        layer.msg(error);
+                                htmlObj.click(function (event) {
+                                    event.stopPropagation();
+                                    if (!liver) { return; }
+                                    let genderText = (liver.gender === 0 || liver.gender === '0') ? '女' : '男';
+                                    layer.open({
+                                        title: '床位' + bedNo + ' · ' + (liver.userName || ''),
+                                        type: 1,
+                                        shade: 0.3,
+                                        area: ['420px', '280px'],
+                                        content:
+                                            '<div style="padding: 24px 32px; line-height: 36px; font-size: 14px;">' +
+                                            '<p><b>学号：</b>' + (liver.id === undefined || liver.id === null ? '-' : liver.id) + '</p>' +
+                                            '<p><b>姓名：</b>' + (liver.userName || '-') + '</p>' +
+                                            '<p><b>性别：</b>' + genderText + '</p>' +
+                                            '<p><b>联系电话：</b>' + (liver.phone || '-') + '</p>' +
+                                            '<p><b>邮箱：</b>' + (liver.email || '-') + '</p>' +
+                                            '</div>'
                                     });
-                                })
+                                });
 
-                            });
-                            bedObj.append(htmlObj);
-                        } else {
-                            html=`
-                        <li>
+                                bedObj.append(htmlObj);
+                            } else {
+                                html=`
+                            <li>
 
-                            <img class="silk-bed-image" src="../images/bed.png"/>
-                            <p style="margin-top: 15px;">床位${bedNo}</p>
-                            <p style="margin-top: 0px;">
-                                <i class="layui-icon layui-icon-delete silk-bed-delete" title="删除床位"></i>
-                                <!--<i class="layui-icon layui-icon-edit" title="编辑床位"></i>-->
-                            </p>
-                        </li>
-                    `;
+                                <img class="silk-bed-image" src="../images/bed.png"/>
+                                <p style="margin-top: 15px;">床位${bedNo}</p>
+                                <p style="margin-top: 0px;">
+                                    <i class="layui-icon layui-icon-delete silk-bed-delete" title="删除床位"></i>
+                                    <!--<i class="layui-icon layui-icon-edit" title="编辑床位"></i>-->
+                                </p>
+                            </li>
+                        `;
 
-                            let htmlObj = $(html);
+                                let htmlObj = $(html);
 
-                            // 点击删除床位
-                            htmlObj.find('.silk-bed-delete').click(function (event) {
-                                event.stopPropagation();
+                                // 点击删除床位
+                                htmlObj.find('.silk-bed-delete').click(function (event) {
+                                    event.stopPropagation();
 
-                                layer.confirm("确定要删除吗？", function (index) {
-                                    axios.get('room/capacity_minus_one?id='+ roomId).then(function (response) {
-                                        htmlObj.remove();
-                                        layer.msg(response.msg);
-                                        layer.close(index);
-                                        loadBed(roomId, bedObj);   // 重新加载房间中的床
-                                    }).catch(function (error) {
-                                        layer.msg(error);
-                                    });
-                                })
-                            });
-                            bedObj.append(htmlObj);
+                                    layer.confirm("确定要删除吗？", function (index) {
+                                        axios.get('room/capacity_minus_one?id='+ roomId).then(function (response) {
+                                            htmlObj.remove();
+                                            layer.msg(response.msg);
+                                            layer.close(index);
+                                            loadBed(roomId, bedObj);   // 重新加载房间中的床
+                                        }).catch(function (error) {
+                                            layer.msg(error);
+                                        });
+                                    })
+                                });
+                                bedObj.append(htmlObj);
+                            }
                         }
-                    }
+                    }).catch(function (error) {
+                        layer.msg(error);
+                    });
                 }).catch(function (error) {
                     layer.msg(error);
                 });

@@ -21,6 +21,16 @@
 		<result column="assigned_time"  property="assignedTime"/>
 		<result column="accepted_time"  property="acceptedTime"/>
 		<result column="completed_time"  property="completedTime"/>
+		<!-- 楼栋信息（楼栋名称） -->
+		<association property="building" javaType="com.silk.entity.Building">
+			<result column="b_building_name" property="buildingName"/>
+		</association>
+		<!-- 房间信息（门牌号/楼层/容量） -->
+		<association property="room" javaType="com.silk.entity.Room">
+			<result column="r_brand" property="brand"/>
+			<result column="r_floor" property="floor"/>
+			<result column="r_room_capacity" property="roomCapacity"/>
+		</association>
 	</resultMap>
 
 	<insert id="create" keyProperty="id" useGeneratedKeys="true" parameterType="com.silk.entity.Repair">
@@ -64,23 +74,34 @@
 	</insert>
 
 	<select id="query" resultMap="Repair">
-		select * from tb_repair
+		select r.*,
+		       b.building_name as b_building_name,
+		       ro.brand as r_brand, ro.floor as r_floor, ro.room_capacity as r_room_capacity
+		from tb_repair r
+		left join tb_building b on r.building_id = b.id
+		left join tb_room ro on r.room_id = ro.id
 		<include refid="RepairFindCriteria"/>
 		order by
 		<choose>
-			<when test="urgency != null and urgency == 2">urgency desc,</when>
-			<otherwise>field(urgency, 2, 1, 0),</otherwise>
+			<when test="urgency != null and urgency == 2">r.urgency desc,</when>
+			<otherwise>field(r.urgency, 2, 1, 0),</otherwise>
 		</choose>
-		rep_date desc
+		r.rep_date desc
 	</select>
 
 	<select id="count" resultType="int">
-		select count(1) from tb_repair
+		select count(1) from tb_repair r
 		<include refid="RepairFindCriteria"/>
 	</select>
 
 	<select id="detail" resultMap="Repair">
-		select * from tb_repair where id = #{id}
+		select r.*,
+		       b.building_name as b_building_name,
+		       ro.brand as r_brand, ro.floor as r_floor, ro.room_capacity as r_room_capacity
+		from tb_repair r
+		left join tb_building b on r.building_id = b.id
+		left join tb_room ro on r.room_id = ro.id
+		where r.id = #{id}
 	</select>
 
 	<delete id="delete">
@@ -135,21 +156,21 @@
 
 	<sql id="RepairFindCriteria">
 		<where>
-			<if test="id != null">and id = #{id}</if>
-			<if test="repItem != null and repItem != ''">and rep_item like concat('%', #{repItem}, '%')</if>
-			<if test="description != null and description != ''">and description like concat('%', #{description}, '%')</if>
-			<if test="keyword != null and keyword != ''">and (rep_item like concat('%', #{keyword}, '%') or description like concat('%', #{keyword}, '%'))</if>
-			<if test="stuId != null">and stu_id = #{stuId}</if>
-			<if test="buildingId != null">and building_id = #{buildingId}</if>
-			<if test="roomId != null">and room_id = #{roomId}</if>
-			<if test="repStatus != null">and rep_status = #{repStatus}</if>
-			<if test="repStatuses != null and repStatuses != ''">and FIND_IN_SET(rep_status, #{repStatuses})</if>
-			<if test="repMan != null and repMan != ''">and rep_man = #{repMan}</if>
-			<if test="urgency != null">and urgency = #{urgency}</if>
-			<if test="repairerId != null">and repairer_id = #{repairerId}</if>
-			<if test="rating != null">and rating = #{rating}</if>
-			<if test="startTime != null and startTime != ''">and rep_date &gt;= concat(#{startTime}, ' 00:00:00')</if>
-			<if test="endTime != null and endTime != ''">and rep_date &lt;= concat(#{endTime}, ' 23:59:59')</if>
+			<if test="id != null">and r.id = #{id}</if>
+			<if test="repItem != null and repItem != ''">and r.rep_item like concat('%', #{repItem}, '%')</if>
+			<if test="description != null and description != ''">and r.description like concat('%', #{description}, '%')</if>
+			<if test="keyword != null and keyword != ''">and (r.rep_item like concat('%', #{keyword}, '%') or r.description like concat('%', #{keyword}, '%'))</if>
+			<if test="stuId != null">and r.stu_id = #{stuId}</if>
+			<if test="buildingId != null">and r.building_id = #{buildingId}</if>
+			<if test="roomId != null">and r.room_id = #{roomId}</if>
+			<if test="repStatus != null">and r.rep_status = #{repStatus}</if>
+			<if test="repStatuses != null and repStatuses != ''">and FIND_IN_SET(r.rep_status, #{repStatuses})</if>
+			<if test="repMan != null and repMan != ''">and r.rep_man = #{repMan}</if>
+			<if test="urgency != null">and r.urgency = #{urgency}</if>
+			<if test="repairerId != null">and r.repairer_id = #{repairerId}</if>
+			<if test="rating != null">and r.rating = #{rating}</if>
+			<if test="startTime != null and startTime != ''">and r.rep_date &gt;= concat(#{startTime}, ' 00:00:00')</if>
+			<if test="endTime != null and endTime != ''">and r.rep_date &lt;= concat(#{endTime}, ' 23:59:59')</if>
 		</where>
 	</sql>
 
