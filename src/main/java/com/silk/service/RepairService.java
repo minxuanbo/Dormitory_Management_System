@@ -55,6 +55,11 @@ public class RepairService {
         return repairMapper.updateSelective(repair);
     }
 
+    // 维修人员拒绝工单（清空指派，回到待指派）
+    public int reject(Integer id) {
+        return repairMapper.reject(id);
+    }
+
     public PageInfo<Repair> query(Repair repair) {
         if(repair != null && repair.getPage() != null){
             PageHelper.startPage(repair.getPage(),repair.getLimit());

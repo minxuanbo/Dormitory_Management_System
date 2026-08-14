@@ -173,6 +173,16 @@
                     });
                     layer.close(index);
                 });
+            } else if (obj.event === 'reject') {
+                layer.confirm('确认拒绝此工单？拒绝后工单将退回待指派，由管理员重新指派。', {icon: 3, title:'提示'}, function(index){
+                    axios.post('/repair/reject', {id: data.id}).then(function(res) {
+                        layer.msg(res.msg || '已拒绝', {icon: 1});
+                        renderTable(currentStatus);
+                    }).catch(function(err) {
+                        layer.msg(err.msg || '操作失败', {icon: 2});
+                    });
+                    layer.close(index);
+                });
             } else if (obj.event === 'complete') {
                 var tpl = $('#completeFormTpl').html();
                 layer.open({
@@ -225,6 +235,7 @@
 <script type="text/html" id="operBar">
     {{# if(d.repStatus === 1){ }}
         <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="accept">接单</a>
+        <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="reject">拒绝</a>
     {{# } else if(d.repStatus === 2){ }}
         <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="complete">完成维修</a>
     {{# } }}

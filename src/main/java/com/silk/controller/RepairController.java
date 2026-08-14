@@ -1,9 +1,11 @@
 package com.silk.controller;
 
 import com.github.pagehelper.PageInfo;
+import com.silk.entity.Building;
 import com.silk.entity.Repair;
 import com.silk.entity.Room;
 import com.silk.entity.User;
+import com.silk.service.BuildingService;
 import com.silk.service.RepairService;
 import com.silk.service.RoomService;
 import com.silk.service.UserService;
@@ -27,6 +29,23 @@ public class RepairController {
     private UserService userService;
     @Autowired
     private RoomService roomService;
+    @Autowired
+    private BuildingService buildingService;
+
+    /**
+     * 安全转换 Map 参数为 Integer：兼容前端传入的 Number 或字符串数字（如 form 表单提交的 "1"）。
+     * 转换失败或为 null 时返回 null，交由调用方做参数校验。
+     */
+    private Integer toInt(Object v) {
+        if (v == null) return null;
+        if (v instanceof Number) return ((Number) v).intValue();
+        try {
+            String s = String.valueOf(v).trim();
+            return s.isEmpty() ? null : Integer.valueOf(s);
+        } catch (Exception e) {
+            return null;
+        }
+    }
 
     @PostMapping("create")
     public Result create(@RequestBody Repair repair){
@@ -148,6 +167,20 @@ public class RepairController {
                 repair.setUrgency(0);
             }
 
+            // 自动指派：根据报修楼栋的负责维修人员（楼栋管理中设置 manager_id）直接指派
+            if (repair.getBuildingId() != null) {
+                Building building = buildingService.detail(repair.getBuildingId());
+                if (building != null && building.getManagerId() != null) {
+                    User repairer = userService.detail(building.getManagerId());
+                    if (repairer != null) {
+                        repair.setRepairerId(repairer.getId());
+                        repair.setRepMan(repairer.getUserName());
+                        repair.setRepStatus(1);   // 待接单
+                        repair.setAssignedTime(new Date());
+                    }
+                }
+            }
+
             int flag = repairService.create(repair);
             if(flag>0){
                 return Result.ok();
@@ -166,8 +199,8 @@ public class RepairController {
             return Result.fail("无权限操作");
         }
 
-        Integer id = (Integer) params.get("id");
-        Integer repairerId = (Integer) params.get("repairerId");
+        Integer id = toInt(params.get("id"));
+        Integer repairerId = toInt(params.get("repairerId"));
         if (id == null || repairerId == null) {
             return Result.fail("参数不完整");
         }
@@ -198,8 +231,8 @@ public class RepairController {
             return Result.fail("无权限操作");
         }
 
-        Integer id = (Integer) params.get("id");
-        Integer urgency = (Integer) params.get("urgency");
+        Integer id = toInt(params.get("id"));
+        Integer urgency = toInt(params.get("urgency"));
         if (id == null || urgency == null) {
             return Result.fail("参数不完整");
         }
@@ -216,6 +249,38 @@ public class RepairController {
         }
     }
 
+    @PostMapping("reject")
+    public Result reject(@RequestBody Map<String, Object> params, HttpServletRequest request){
+        User param = (User)request.getAttribute("user");
+        if (param.getUserType() != 1) {
+            return Result.fail("无权限操作");
+        }
+
+        Integer id = toInt(params.get("id"));
+        if (id == null) {
+            return Result.fail("参数不完整");
+        }
+
+        // 校验工单存在、处于待接单状态且当前指派给该维修人员
+        Repair old = repairService.detail(id);
+        if (old == null) {
+            return Result.fail("工单不存在");
+        }
+        if (old.getRepStatus() == null || old.getRepStatus() != 1) {
+            return Result.fail("当前状态不可拒绝");
+        }
+        if (old.getRepairerId() == null || !old.getRepairerId().equals(param.getId())) {
+            return Result.fail("该工单未指派给您");
+        }
+
+        int flag = repairService.reject(id);
+        if(flag>0){
+            return Result.ok("已拒绝，工单返回待指派");
+        }else{
+            return Result.fail("操作失败");
+        }
+    }
+
     @PostMapping("accept")
     public Result accept(@RequestBody Map<String, Object> params, HttpServletRequest request){
         User param = (User)request.getAttribute("user");
@@ -223,7 +288,7 @@ public class RepairController {
             return Result.fail("无权限操作");
         }
 
-        Integer id = (Integer) params.get("id");
+        Integer id = toInt(params.get("id"));
         if (id == null) {
             return Result.fail("参数不完整");
         }
@@ -270,8 +335,8 @@ public class RepairController {
     public Result rate(@RequestBody Map<String, Object> params, HttpServletRequest request){
         User param = (User)request.getAttribute("user");
 
-        Integer id = (Integer) params.get("id");
-        Integer rating = params.get("rating") != null ? ((Number) params.get("rating")).intValue() : null;
+        Integer id = toInt(params.get("id"));
+        Integer rating = toInt(params.get("rating"));
         String feedback = (String) params.get("feedback");
 
         if (id == null || rating == null) {

@@ -17,6 +17,9 @@ public interface RepairMapper {
 
 	public int updateSelective(Repair repair);
 
+	// 维修人员拒绝工单：清空指派信息，状态回到待指派(0)
+	public int reject(Integer id);
+
 	public List<Repair> query(Repair repair);
 
 	public Repair detail(Integer id);

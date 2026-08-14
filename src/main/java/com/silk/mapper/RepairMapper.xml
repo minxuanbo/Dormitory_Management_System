@@ -130,6 +130,15 @@
 		where id = #{id}
 	</update>
 
+	<update id="reject">
+		update tb_repair
+		set repairer_id = null,
+			rep_man = null,
+			assigned_time = null,
+			rep_status = 0
+		where id = #{id}
+	</update>
+
 	<update id="updateSelective">
 		update tb_repair
 		<set>

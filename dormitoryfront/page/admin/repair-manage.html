@@ -320,8 +320,8 @@
                         return false;
                     }
                     axios.post('/repair/assign', {
-                        id: params.id,
-                        repairerId: params.repairerId
+                        id: Number(params.id),
+                        repairerId: Number(params.repairerId)
                     }).then(function (res) {
                         layer.msg(res.msg || '指派成功');
                         layer.close(assignIndex);
@@ -356,7 +356,7 @@
                 form.on('submit(urgencySubmitBtn)', function (formData) {
                     var params = formData.field;
                     axios.post('/repair/set_urgency', {
-                        id: params.id,
+                        id: Number(params.id),
                         urgency: parseInt(params.urgency)
                     }).then(function (res) {
                         layer.msg(res.msg || '设置成功');
