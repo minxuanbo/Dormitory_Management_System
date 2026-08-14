@@ -35,11 +35,12 @@ layui.config({
 });
 
 // ============================================================
-// 全站 API 接口基准路径（后端 context-path）
-// layui table / layui upload 使用 jQuery 发起请求，不会经过 axios，
-// 因此这里统一用绝对路径拼接，避免相对路径解析错误。
+// 全站 API 接口基准路径
+// 注意：axios 模块已配置 baseURL=/dormitory，layui table 底层也改用 axios，
+// upload.js 亦自行拼接 /dormitory/ 前缀；因此此处必须留空，
+// 否则 table/upload 请求会出现 /dormitory/dormitory/... 双重前缀导致 404。
 // ============================================================
-var API_BASE = '/dormitory';
+var API_BASE = '';
 
 // ============================================================
 // 为所有 jQuery 请求（layui table、layui upload、miniPage 等）

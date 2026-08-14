@@ -703,8 +703,8 @@ layui.define(['laytpl', 'laypage', 'layer', 'form', 'util', 'axios'], function(e
       axios({
         method: options.method || 'get',
         url: options.url,
-        data: data,
-        headers: options.headers || {'Content-Type':'application/json'},
+        data: $.param(data),
+        headers: options.headers || {'Content-Type':'application/x-www-form-urlencoded'},
         responseType: 'json',
         timeout: 10000,     // 单位ms
       }).then(function(res){

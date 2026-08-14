@@ -206,7 +206,7 @@ layui.define('layer' , function(exports){
         
         //提交文件
         var opts = {
-          url: "/dormitory/" + options.url
+          url: "/dormitory/" + options.url.replace(/^\/+/, '')
           ,type: 'post' //统一采用 post 上传
           ,data: formData
           ,contentType: false 

@@ -1,12 +1,12 @@
 <style>
-    .repair-list .status-badge {display:inline-block;padding:3px 10px;border-radius:4px;font-size:12px;}
+    .repair-list .status-badge {display:inline-block;padding:2px 8px;border-radius:4px;font-size:12px;line-height:18px;vertical-align:middle;}
     .repair-list .search-card {margin-bottom:15px;}
     .repair-list .search-card .layui-form-item {margin-bottom:0;}
     .repair-list .img-thumb {width:50px;height:50px;object-fit:cover;border-radius:4px;cursor:pointer;}
     .repair-list .detail-row {margin-bottom:12px;line-height:24px;}
     .repair-list .detail-label {display:inline-block;width:100px;color:#666;font-weight:bold;}
     .repair-list .detail-value {color:#333;}
-    .repair-list .rate-tips {margin-left:10px;color:#999;font-size:12px;}
+    .rate-tips {display:inline-block;margin-left:10px;color:#999;font-size:12px;line-height:20px;vertical-align:middle;}
 </style>
 <div class="layuimini-container layuimini-page-anim">
     <div class="layuimini-main repair-list">
@@ -119,6 +119,8 @@
 
         var currentWhere = {};
 
+        form.render();
+
         table.render({
             elem: '#repairTable',
             method: 'post',
@@ -129,16 +131,15 @@
                 {field: 'id', width: 80, title: 'ID', sort: true},
                 {field: 'repItem', title: '报修物品', width: 150},
                 {field: 'description', title: '描述', minWidth: 200, ellipsis: true},
-                {field: 'repStatus', title: '状态', width: 100, templet: '#statusTpl'},
-                {field: 'urgency', title: '紧急度', width: 100, templet: '#urgencyTpl'},
+                {field: 'repStatus', title: '状态', width: 110, templet: '#statusTpl'},
+                {field: 'urgency', title: '紧急度', width: 110, templet: '#urgencyTpl'},
                 {field: 'repDate', title: '提交时间', width: 170},
                 {title: '操作', width: 180, toolbar: '#operateTpl', fixed: 'right'}
             ]],
             limits: [10, 15, 20, 30, 50],
             limit: 10,
             page: true,
-            skin: 'line',
-            even: true
+            skin: 'line'
         });
 
         form.on('submit(data-search-btn)', function (data) {
@@ -248,14 +249,15 @@
             var rateValue = 0;
             var html = '<div style="padding:25px;">' +
                 '<div class="layui-form-item">' +
-                '<label class="layui-form-label" style="width:80px;">服务评分<span class="rate-tips" id="rateText">请点击星星评分</span></label>' +
-                '<div class="layui-input-block" style="margin-left:100px;">' +
-                '<div id="rateIns"></div>' +
+                '<label class="layui-form-label" style="width:90px;">服务评分</label>' +
+                '<div class="layui-input-block" style="margin-left:110px;">' +
+                '<div id="rateIns" style="display:inline-block;vertical-align:middle;"></div>' +
+                '<span class="rate-tips" id="rateText">请点击星星评分</span>' +
                 '</div>' +
                 '</div>' +
                 '<div class="layui-form-item layui-form-text">' +
-                '<label class="layui-form-label" style="width:80px;">评价内容</label>' +
-                '<div class="layui-input-block" style="margin-left:100px;">' +
+                '<label class="layui-form-label" style="width:90px;">评价内容</label>' +
+                '<div class="layui-input-block" style="margin-left:110px;">' +
                 '<textarea id="feedbackTxt" placeholder="请输入您的评价，帮助我们改进服务~" class="layui-textarea" style="min-height:100px;"></textarea>' +
                 '</div>' +
                 '</div>' +
