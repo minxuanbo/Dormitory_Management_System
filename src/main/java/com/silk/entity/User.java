@@ -30,6 +30,9 @@ public class User extends Entity{
 	private String roomBrand;		// 房间门牌号（如 0701）
 	private Integer roomFloor;		// 楼层
 
+	// 负责楼栋（维修人员：由 tb_building.manager_id 反查，多栋以"、"拼接，不参与存储）
+	private String managerBuildings;
+
 
 	public Integer getId() {
 		return id;
@@ -119,6 +122,14 @@ public class User extends Entity{
 
 	public void setRoomFloor(Integer roomFloor) {
 		this.roomFloor = roomFloor;
+	}
+
+	public String getManagerBuildings() {
+		return managerBuildings;
+	}
+
+	public void setManagerBuildings(String managerBuildings) {
+		this.managerBuildings = managerBuildings;
 	}
 
 	public User() {

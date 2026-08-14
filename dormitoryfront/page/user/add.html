@@ -103,9 +103,14 @@
          */
         form.render();
 
-        // 从 URL 读取 userType 参数（维修人员管理=1 / 学生管理=0），固定角色不可改
-        var urlParams = new URLSearchParams(location.search);
-        var urlUserType = urlParams.get('userType');
+        // 从 URL 读取 userType 参数（维修人员管理=1 / 学生管理=0），固定角色不可改。
+        // 弹窗由列表页（hash 路由 #/user/list.html?userType=1）内打开，location.search 取不到参数，
+        // 优先读列表页写入的全局变量 window.__currentUserType，兜底解析 location.hash。
+        var urlUserType = window.__currentUserType || null;
+        if (urlUserType === null) {
+            var _hashQuery = (location.hash || '').split('?')[1] || '';
+            urlUserType = new URLSearchParams(_hashQuery).get('userType') || null;
+        }
         if (urlUserType !== null && urlUserType !== '') {
             $('.userTypeFormItem').hide();
             $('<input type="hidden" name="userType" value="' + urlUserType + '">').appendTo('.userForm');

@@ -74,8 +74,13 @@
             miniPage = layui.miniPage;
 
         // 从 URL 读取 userType 参数：维修人员管理(userType=1) / 学生管理(userType=0)
-        var urlParams = new URLSearchParams(location.search);
+        // 注意：内容页由 miniPage 通过 hash 路由注入（#/user/list.html?userType=1），
+        // 浏览器地址栏的 location.search 取不到内容页参数，需从 location.hash 解析。
+        var hashQuery = (location.hash || '').split('?')[1] || '';
+        var urlParams = new URLSearchParams(hashQuery);
         var urlUserType = urlParams.get('userType');
+        // 供 add/update 弹窗页共享（同一 window 环境）
+        window.__currentUserType = urlUserType !== null && urlUserType !== '' ? String(urlUserType) : null;
         var fixedWhere = {};
         if (urlUserType !== null && urlUserType !== '') {
             urlUserType = String(urlUserType);
@@ -104,7 +109,11 @@
                         }
                     }},
                 {field: 'phone', title: '联系电话', minWidth: 130},
-                {field: 'roomId', title: '宿舍', minWidth: 200, templet: function (row) {
+                {field: 'roomId', title: (urlUserType === '1' ? '负责宿舍' : '宿舍'), minWidth: 200, templet: function (row) {
+                        // 维修人员管理：显示其负责的楼栋（楼栋管理中设置），样式与学生端宿舍栏一致
+                        if (urlUserType === '1') {
+                            return row.managerBuildings ? row.managerBuildings : '-';
+                        }
                         if (row.buildingName || row.roomBrand) {
                             return (row.buildingName || '') + ' ' + (row.roomFloor != null ? row.roomFloor + '楼' : '') + (row.roomBrand || ('（' + row.roomId + '）'));
                         }
