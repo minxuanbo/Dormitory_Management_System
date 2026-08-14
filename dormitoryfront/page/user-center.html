@@ -1,0 +1,222 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>个人中心</title>
+    <link rel="stylesheet" href="../lib/layui-v2.5.5/css/layui.css" media="all">
+    <link rel="stylesheet" href="../lib/font-awesome-4.7.0/css/font-awesome.min.css" media="all">
+    <link rel="stylesheet" href="../css/public.css" media="all">
+</head>
+<body>
+<div class="layuimini-container">
+    <div class="layuimini-main">
+        <fieldset class="layui-elem-field layui-field-title">
+            <legend>个人中心</legend>
+        </fieldset>
+        <div class="layui-row layui-col-space15">
+            <!-- 基本信息 -->
+            <div class="layui-col-md6">
+                <div class="layui-card">
+                    <div class="layui-card-header">
+                        <i class="fa fa-user-circle-o" style="color:#1e9fff;margin-right:6px;"></i>基本信息
+                    </div>
+                    <div class="layui-card-body">
+                        <form class="layui-form" lay-filter="infoForm">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">账号/学号</label>
+                                <div class="layui-input-block">
+                                    <input type="text" id="ucUserId" readonly class="layui-input" style="background-color:#f2f2f2;">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">姓名</label>
+                                <div class="layui-input-block">
+                                    <input type="text" id="ucUserName" readonly class="layui-input" style="background-color:#f2f2f2;">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">性别</label>
+                                <div class="layui-input-block">
+                                    <input type="text" id="ucGenderText" readonly class="layui-input" style="background-color:#f2f2f2;">
+                                </div>
+                            </div>
+                            <div class="layui-form-item" id="ucRoomItem" style="display:none;">
+                                <label class="layui-form-label">宿舍</label>
+                                <div class="layui-input-block">
+                                    <input type="text" id="ucRoomInfo" readonly class="layui-input" style="background-color:#f2f2f2;">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">联系电话</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="phone" placeholder="请输入联系电话" lay-verify="required|phone" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">邮箱</label>
+                                <div class="layui-input-block">
+                                    <input type="text" name="email" placeholder="请输入邮箱" lay-verify="email" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <div class="layui-input-block">
+                                    <button class="layui-btn" lay-submit lay-filter="saveInfo">保存信息</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <!-- 修改密码 -->
+            <div class="layui-col-md6">
+                <div class="layui-card">
+                    <div class="layui-card-header">
+                        <i class="fa fa-lock" style="color:#ffb800;margin-right:6px;"></i>修改密码
+                    </div>
+                    <div class="layui-card-body">
+                        <form class="layui-form" lay-filter="pwdForm">
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">原密码</label>
+                                <div class="layui-input-block">
+                                    <input type="password" name="oldPwd" lay-verify="required" placeholder="请输入原密码" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">新密码</label>
+                                <div class="layui-input-block">
+                                    <input type="password" name="newPwd" id="ucNewPwd" lay-verify="required|pass" placeholder="6-20位密码" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <label class="layui-form-label">确认密码</label>
+                                <div class="layui-input-block">
+                                    <input type="password" name="confirmPwd" lay-verify="required|confirmPwd" placeholder="请再次输入新密码" class="layui-input">
+                                </div>
+                            </div>
+                            <div class="layui-form-item">
+                                <div class="layui-input-block">
+                                    <button class="layui-btn layui-btn-warm" lay-submit lay-filter="savePwd">修改密码</button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // 本页作为内容页由 miniPage 注入到父页面(index.html)中运行，
+    // 父页面已加载 layui 内核并通过 lay-config 初始化了 axios/storage 等扩展模块，
+    // 因此这里不可再重复引入 layui.js / lay-config.js（会因 rootPath 计算错乱导致模块404）。
+    layui.use(['form', 'jquery', 'layer', 'axios', 'storage'], function () {
+        var form = layui.form, $ = layui.jquery, layer = layui.layer,
+            axios = layui.axios, storage = layui.storage;
+
+        // 自定义校验规则
+        form.verify({
+            pass: [/^\S{6,20}$/, '密码必须为6-20位，且不能出现空格'],
+            confirmPwd: function (value) {
+                if (value !== $('#ucNewPwd').val()) {
+                    return '两次输入的密码不一致';
+                }
+            }
+        });
+
+        var user = storage.get('user');
+        if (!user || !user.id) {
+            layer.msg('登录信息已失效，请重新登录');
+            return;
+        }
+
+        // 加载最新个人信息（含宿舍、联系电话、邮箱）
+        // user/query 返回 {code,msg,data:[...],count}，data 为数组（兼容 PageInfo 的 list 结构）
+        axios.post('user/query', 'id=' + user.id + '&page=1&limit=1').then(function (res) {
+            var data = null;
+            if (res && res.code === 200 && res.data) {
+                if (res.data.length) {
+                    data = res.data[0];
+                } else if (res.data.list && res.data.list.length) {
+                    data = res.data.list[0];
+                }
+            }
+            // 归属校验：查询异常或返回他人数据时，回退为本地缓存，绝不明文显示他人信息
+            if (!data || String(data.id) !== String(user.id)) {
+                data = user;
+            }
+            $('#ucUserId').val(data.id);
+            $('#ucUserName').val(data.userName);
+            $('#ucGenderText').val((data.gender === 0 || data.gender === '0') ? '女' : '男');
+            if (data.userType === 0) {   // 学生展示宿舍信息
+                $('#ucRoomItem').show();
+                $('#ucRoomInfo').val((data.buildingName || '') + ' ' + (data.roomBrand || ''));
+            }
+            $('input[name=phone]').val(data.phone || '');
+            $('input[name=email]').val(data.email || '');
+            // 用最新数据同步本地缓存，保证下次进入或其它页面拿到的是最新信息
+            user.userName = data.userName;
+            user.gender = data.gender;
+            user.phone = data.phone;
+            user.email = data.email;
+            if (data.userType === 0) {
+                user.roomId = data.roomId;
+                user.buildingName = data.buildingName;
+                user.roomBrand = data.roomBrand;
+            }
+            storage.set('user', user);
+            form.render();
+        }).catch(function () {
+            // 降级：直接用本地缓存的 user
+            $('#ucUserId').val(user.id);
+            $('#ucUserName').val(user.userName);
+            $('#ucGenderText').val((user.gender === 0 || user.gender === '0') ? '女' : '男');
+            $('input[name=phone]').val(user.phone || '');
+            $('input[name=email]').val(user.email || '');
+            form.render();
+        });
+
+        // 保存基本信息
+        form.on('submit(saveInfo)', function (data) {
+            var field = data.field;
+            axios.post('user/update', {
+                id: user.id,
+                phone: field.phone,
+                email: field.email
+            }).then(function (res) {
+                layer.msg('保存成功', {icon: 1});
+                // 同步本地缓存
+                user.phone = field.phone;
+                user.email = field.email;
+                storage.set('user', user);
+            }).catch(function (msg) {
+                layer.msg(msg || '保存失败', {icon: 2});
+            });
+            return false;
+        });
+
+        // 修改密码
+        form.on('submit(savePwd)', function (data) {
+            var field = data.field;
+            if (field.oldPwd === field.newPwd) {
+                layer.msg('新密码不能与原密码相同', {icon: 2});
+                return false;
+            }
+            axios.post('user/update_pwd', {
+                id: user.id,
+                oldPwd: field.oldPwd,
+                newPwd: field.newPwd
+            }).then(function (res) {
+                layer.msg('密码修改成功，请重新登录', {icon: 1}, function () {
+                    storage.clear();
+                    window.location.href = 'login.html';
+                });
+            }).catch(function (msg) {
+                layer.msg(msg || '修改失败', {icon: 2});
+            });
+            return false;
+        });
+    });
+</script>
+</body>
+</html>

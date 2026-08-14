@@ -196,16 +196,22 @@
             }
         });
 
+        // 快捷操作跳转：layuimini 通过 hash 加载内容页（miniPage 无 openNewTab 方法，需用 hashChange）
+        function quickJump(href) {
+            var miniPage = layui.miniPage || (window.parent && window.parent.layui && window.parent.layui.miniPage);
+            if (miniPage && typeof miniPage.hashChange === 'function') {
+                miniPage.hashChange(href);
+            } else {
+                location.href = href;
+            }
+        }
+
         $('#quickAdd').on('click', function () {
-            window.parent && window.parent.layui && window.parent.layui.miniPage ?
-                window.parent.layui.miniPage.openNewTab('提交报修', 'student/repair-add.html') :
-                location.href = 'student/repair-add.html';
+            quickJump('student/repair-add.html');
         });
 
         $('#quickList').on('click', function () {
-            window.parent && window.parent.layui && window.parent.layui.miniPage ?
-                window.parent.layui.miniPage.openNewTab('报修列表', 'student/repair-list.html') :
-                location.href = 'student/repair-list.html';
+            quickJump('student/repair-list.html');
         });
 
         loadStatistics();

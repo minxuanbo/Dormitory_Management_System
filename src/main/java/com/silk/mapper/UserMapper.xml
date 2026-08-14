@@ -50,7 +50,7 @@
 	</select>
 
 	<select id="count" resultType="int">
-		select count(1) from tb_user
+		select count(1) from tb_user u
 		<include refid="UserFindCriteria"/>
 	</select>
 
@@ -91,14 +91,14 @@
 
 	<sql id="UserFindCriteria">
 		<where>
-			user_type != 2
-			<if test="id != null">and id like concat('%', #{id},'%')</if>
-			<if test="userPwd != null and userPwd != ''">and user_pwd = #{userPwd}</if>
-			<if test="userName != null and userName != ''">and user_name like concat('%', #{userName},'%') </if>
-			<if test="gender != null">and gender = #{gender}</if>
-			<if test="email != null and email != ''">and email = #{email}</if>
-			<if test="roomId != null">and room_id = #{roomId}</if>
-			<if test="userType != null">and user_type = #{userType}</if>
+			u.user_type != 2
+			<if test="id != null">and u.id like concat('%', #{id},'%')</if>
+			<if test="userPwd != null and userPwd != ''">and u.user_pwd = #{userPwd}</if>
+			<if test="userName != null and userName != ''">and u.user_name like concat('%', #{userName},'%') </if>
+			<if test="gender != null">and u.gender = #{gender}</if>
+			<if test="email != null and email != ''">and u.email = #{email}</if>
+			<if test="roomId != null">and u.room_id = #{roomId}</if>
+			<if test="userType != null">and u.user_type = #{userType}</if>
 		</where>
 	</sql>
 
@@ -106,6 +106,10 @@
 	<select id="login" resultMap="User">
 		select * from tb_user where (user_name = #{userName} or id = #{userName}) and user_pwd = #{userPwd}
 	</select>
+
+	<update id="updatePwd">
+		update tb_user set user_pwd = #{userPwd} where id = #{id}
+	</update>
 
 
 	<select id="queryLiverAmount" resultType="int">

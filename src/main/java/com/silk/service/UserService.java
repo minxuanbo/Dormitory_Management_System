@@ -66,6 +66,15 @@ public class UserService {
         return userMapper.login(userName, userPwd);
     }
 
+    // 修改密码：先校验原密码，正确则更新为新密码
+    public boolean updatePwd(Integer id, String oldPwd, String newPwd){
+        User user = userMapper.detail(id);
+        if(user == null || !oldPwd.equals(user.getUserPwd())){
+            return false;
+        }
+        return userMapper.updatePwd(id, newPwd) > 0;
+    }
+
     // 查询某个房间住了多少人
     public int queryLiverAmount(Integer roomId){
         return userMapper.queryLiverAmount(roomId);

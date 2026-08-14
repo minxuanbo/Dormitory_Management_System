@@ -1765,6 +1765,12 @@ layui.define(["storage"],function(exports){
         if(storage.getToken()){
             config.headers.token=storage.getToken();     // 从localStorage中获取token
         }
+        // 以 'a=1&b=2' 字符串形式传参时，浏览器默认 Content-Type 为 text/plain，
+        // 会导致后端 POJO 表单绑定失败（参数全部丢失）。
+        // 这里统一补上 x-www-form-urlencoded，保证 id/userType 等条件能正常绑定。
+        if (typeof config.data === 'string' && config.data.length > 0) {
+            config.headers['Content-Type'] = 'application/x-www-form-urlencoded;charset=utf-8';
+        }
         return config;
     },function (error) {
         return Promise.reject(error);

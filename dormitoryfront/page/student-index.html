@@ -46,6 +46,9 @@
                             <hr>
                         </dd>
                         <dd>
+                            <a href="javascript:;" class="user-center">个人中心</a>
+                        </dd>
+                        <dd>
                             <a href="javascript:;" class="login-out">退出登录</a>
                         </dd>
                     </dl>
@@ -83,6 +86,12 @@
                 {title: "报修列表", href: "student/repair-list.html", icon: "fa fa-list", target: "_self"},
                 {title: "提交报修", href: "student/repair-add.html", icon: "fa fa-plus", target: "_self"}
             ]
+        },
+        {
+            title: "个人中心",
+            icon: "fa fa-user-circle",
+            href: "user-center.html",
+            target: "_self"
         }
     ];
 
@@ -131,6 +140,11 @@
             layer.msg('退出登录成功', {icon: 1, time: 500}, function () {
                 window.location = 'login.html';
             });
+        });
+
+        // 顶栏下拉 -> 个人中心
+        $('.user-center').on("click", function () {
+            layui.miniPage.hashChange('user-center.html');
         });
     });
 </script>

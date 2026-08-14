@@ -52,6 +52,19 @@ public class UserController {
         }
     }
 
+    @PostMapping("update_pwd")
+    public Result updatePwd(@RequestBody Map<String, Object> params){       // 个人中心修改密码：id/oldPwd/newPwd
+        Integer id = Integer.valueOf(String.valueOf(params.get("id")));
+        String oldPwd = (String) params.get("oldPwd");
+        String newPwd = (String) params.get("newPwd");
+        boolean flag = userService.updatePwd(id, oldPwd, newPwd);
+        if(flag){
+            return Result.ok();
+        }else{
+            return Result.fail("原密码不正确");
+        }
+    }
+
     @GetMapping("detail")
     public User detail(Integer id){
         return userService.detail(id);

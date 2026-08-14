@@ -25,6 +25,9 @@ public interface UserMapper {
 
 	public User login(@Param("userName") String userName, @Param("userPwd") String userPwd);
 
+	// 修改密码
+	public int updatePwd(@Param("id") Integer id, @Param("userPwd") String userPwd);
+
 
 	public int queryLiverAmount(Integer roomId);
 

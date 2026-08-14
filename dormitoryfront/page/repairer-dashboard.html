@@ -193,7 +193,13 @@
         }
 
         window.goOrderList = function() {
-            parent.layui.index && parent.layui.index.openTabsPage('repairer/order-list.html', '我的工单');
+            // layuimini 无 layui.index.openTabsPage，用 hashChange 加载内容页
+            var miniPage = layui.miniPage || (window.parent && window.parent.layui && window.parent.layui.miniPage);
+            if (miniPage && typeof miniPage.hashChange === 'function') {
+                miniPage.hashChange('repairer/order-list.html');
+            } else {
+                location.href = 'repairer/order-list.html';
+            }
         };
 
         table.on('tool(latestOrderFilter)', function(obj) {
