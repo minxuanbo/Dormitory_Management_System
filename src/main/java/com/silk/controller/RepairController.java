@@ -2,11 +2,8 @@ package com.silk.controller;
 
 import com.github.pagehelper.PageInfo;
 import com.silk.entity.Repair;
-import com.silk.entity.Room;
 import com.silk.entity.User;
-import com.silk.service.BuildingService;
 import com.silk.service.RepairService;
-import com.silk.service.RoomService;
 import com.silk.service.UserService;
 import com.silk.utils.Result;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,10 +23,6 @@ public class RepairController {
     private RepairService repairService;
     @Autowired
     private UserService userService;
-    @Autowired
-    private BuildingService buildingService;
-    @Autowired
-    private RoomService roomService;
 
     @PostMapping("create")
     public Result create(@RequestBody Repair repair){
@@ -68,12 +61,6 @@ public class RepairController {
             if (repair.getStuId() != null) {
                 repair.setUser(userService.detail(repair.getStuId()));
             }
-            if (repair.getBuildingId() != null) {
-                repair.setBuilding(buildingService.detail(repair.getBuildingId()));
-            }
-            if (repair.getRoomId() != null) {
-                repair.setRoom(roomService.detail(repair.getRoomId()));
-            }
             if (repair.getRepairerId() != null) {
                 repair.setRepairer(userService.detail(repair.getRepairerId()));
             }
@@ -101,12 +88,6 @@ public class RepairController {
         list.forEach(entity->{
             if (entity.getStuId() != null) {
                 entity.setUser(userService.detail(entity.getStuId()));
-            }
-            if (entity.getBuildingId() != null) {
-                entity.setBuilding(buildingService.detail(entity.getBuildingId()));
-            }
-            if (entity.getRoomId() != null) {
-                entity.setRoom(roomService.detail(entity.getRoomId()));
             }
             if (entity.getRepairerId() != null) {
                 entity.setRepairer(userService.detail(entity.getRepairerId()));
@@ -147,11 +128,9 @@ public class RepairController {
 
         User student = userService.detail(param.getId());
         if (student != null && student.getRoomId() != null) {
-            Room room = roomService.detail(student.getRoomId());
-            if (room != null) {
-                repair.setBuildingId(room.getBuildingId());
-            }
             repair.setRoomId(student.getRoomId());
+            // 楼栋ID按房间号约定推导：房间号如 100101 → 1号楼（roomId / 100000）
+            repair.setBuildingId(student.getRoomId() / 100000);
             repair.setStuId(param.getId());
             repair.setRepStatus(0);
             repair.setRepDate(new Date());

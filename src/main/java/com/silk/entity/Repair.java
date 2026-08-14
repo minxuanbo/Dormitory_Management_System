@@ -43,11 +43,9 @@ public class Repair extends Entity{
 	private Date completedTime;		// 完成时间
 
 	/**
-	 * 引入User、Building、Room三个实体
+	 * 报修学生信息（用于前端展示）
 	 */
 	private User user;
-	private Building building;
-	private Room room;
 
 	// 维修人员信息（用于前端展示）
 	private User repairer;
@@ -136,22 +134,6 @@ public class Repair extends Entity{
 
 	public void setUser(User user) {
 		this.user = user;
-	}
-
-	public Building getBuilding() {
-		return building;
-	}
-
-	public void setBuilding(Building building) {
-		this.building = building;
-	}
-
-	public Room getRoom() {
-		return room;
-	}
-
-	public void setRoom(Room room) {
-		this.room = room;
 	}
 
 	// === 新字段 getter/setter ===
