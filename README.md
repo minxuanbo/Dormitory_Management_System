@@ -1,12 +1,12 @@
 # 宿舍报修系统
 
-基于 Spring Boot + MyBatis + Layui 的宿舍报修管理系统，支持 **学生、维修人员、管理员** 三个角色的协同工作：学生在线提交报修并评价服务，维修人员接单、处理并填写维修记录，管理员指派工单、管理紧急程度并查看数据统计与满意度分析。
+基于 Spring Boot + MyBatis + Layui 的宿舍报修管理系统，支持 **学生、维修人员、管理员** 三个角色的协同工作：学生在线提交报修并评价服务，维修人员接单、处理并填写维修记录，管理员指派工单、管理紧急程度并查看数据统计与满意度分析。三个角色均可在个人中心查看 / 修改个人信息并修改登录密码。
 
 ## 功能概览
 
-- **学生端**：提交报修（可上传图片）、查看报修进度、对已完成的工单进行 1-5 星评分与文字评价
-- **维修人员端**：查看指派给自己的工单、接单、填写维修记录、查询历史记录
-- **管理员端**：查看全部工单、指派维修人员、设置紧急程度、数据统计（ECharts 可视化）、满意度分析
+- **学生端**：提交报修（可上传图片）、查看报修进度、对已完成的工单进行 1-5 星评分与文字评价、个人中心
+- **维修人员端**：查看指派给自己的工单、接单、填写维修记录、查询历史记录、个人中心
+- **管理员端**：查看全部工单、指派维修人员、设置紧急程度、数据统计（ECharts 可视化）、满意度分析、用户管理（维修人员 / 学生）、宿舍管理（楼栋 / 房间）
 
 ## 技术栈
 
@@ -91,6 +91,7 @@ http://localhost:8081/dormitory/page/login.html
 - **提交报修**：填写报修物品、描述、上传图片，系统自动获取所在房间信息
 - **我的报修**：查看个人所有报修记录及进度
 - **服务评价**：对已完成的维修工单进行 1-5 星评分和文字评价
+- **个人中心**：查看个人资料（用户名、性别、宿舍等栏目只读），修改联系电话、邮箱，修改登录密码
 
 ### 维修人员端
 
@@ -98,6 +99,7 @@ http://localhost:8081/dormitory/page/login.html
 - **接单操作**：确认接收工单，状态自动变更为「维修中」
 - **完成维修**：填写维修记录，完成工单
 - **历史记录**：查看所有历史维修记录
+- **个人中心**：查看个人资料（只读栏目），修改联系电话、邮箱，修改登录密码
 
 ### 管理员端
 
@@ -106,6 +108,8 @@ http://localhost:8081/dormitory/page/login.html
 - **紧急程度管理**：设置工单紧急程度（普通/紧急/非常紧急）
 - **数据统计**：ECharts 可视化统计各状态、各紧急程度工单数量及近 7 日趋势
 - **满意度分析**：查看整体评分均值、评分分布与已评价工单列表
+- **用户管理**：维修人员管理 / 学生管理（按角色维护系统用户）
+- **宿舍管理**：楼栋管理 / 房间管理（维护楼栋与房间信息）
 
 ## 维修状态流转
 
@@ -126,6 +130,9 @@ http://localhost:8081/dormitory/page/login.html
 │   ├── controller/     # 控制器层
 │   │   ├── LoginController.java      # 登录（自动识别角色）
 │   │   ├── RepairController.java     # 报修工单核心 API
+│   │   ├── UserController.java       # 用户管理 + 个人中心（改密）
+│   │   ├── BuildingController.java   # 楼栋管理
+│   │   ├── RoomController.java       # 房间管理
 │   │   ├── FileController.java       # 图片上传
 │   │   └── ...
 │   ├── entity/         # 实体类
@@ -143,9 +150,13 @@ http://localhost:8081/dormitory/page/login.html
 │   │   ├── student-index.html       # 学生端主页
 │   │   ├── repairer-index.html      # 维修人员端主页
 │   │   ├── admin-index.html         # 管理员端主页
-│   │   ├── student/                 # 学生端页面
-│   │   ├── repairer/                # 维修人员端页面
-│   │   └── admin/                   # 管理员端页面
+│   │   ├── user-center.html         # 个人中心（各角色共用）
+│   │   ├── student/                 # 学生端页面（报修列表 / 提交报修）
+│   │   ├── repairer/                # 维修人员端页面（我的工单 / 历史记录）
+│   │   ├── admin/                   # 管理员端页面（工单管理 / 统计 / 满意度）
+│   │   ├── user/                    # 用户管理页面
+│   │   ├── building/                # 楼栋管理页面
+│   │   └── room/                    # 房间管理页面
 │   ├── js/                          # JavaScript
 │   └── lib/                         # 第三方库
 └── init.sql                         # 数据库初始化脚本（建库建表 + 示例数据）
@@ -153,37 +164,63 @@ http://localhost:8081/dormitory/page/login.html
 
 ## API 接口
 
+> 实际访问时需加上上下文路径，如 `http://localhost:8081/dormitory/user/query`。
+
 ### 通用
 
-| 方法 | 路径         | 说明                 |
-| ---- | ------------ | -------------------- |
-| POST | /login       | 登录（自动识别角色） |
-| POST | /file/upload | 图片上传             |
+| 方法 | 路径         | 说明                   |
+| ---- | ------------ | ---------------------- |
+| POST | /login       | 登录（自动识别角色）   |
+| POST | /file/upload | 图片上传               |
 
-### 学生端
+### 报修工单
 
-| 方法 | 路径               | 说明         |
-| ---- | ------------------ | ------------ |
-| POST | /repair/stu_create | 提交报修     |
-| POST | /repair/my_list    | 我的报修列表 |
-| POST | /repair/rate       | 评价工单     |
+| 方法 | 路径                 | 说明                           |
+| ---- | -------------------- | ------------------------------ |
+| POST | /repair/create       | 提交报修（JSON）               |
+| POST | /repair/stu_create   | 学生端提交报修（含房间自动带出）|
+| GET  | /repair/detail       | 工单详情                       |
+| POST | /repair/query        | 全部工单查询（管理员）         |
+| POST | /repair/my_list      | 我的报修列表（学生）           |
+| POST | /repair/my_orders    | 我的工单列表（维修人员）       |
+| POST | /repair/my_history   | 历史工单（维修人员）           |
+| POST | /repair/assign       | 指派维修人员                   |
+| POST | /repair/set_urgency  | 设置紧急程度                   |
+| POST | /repair/accept       | 接单                           |
+| POST | /repair/complete     | 完成维修（填写维修记录）       |
+| POST | /repair/rate         | 学生评价工单                   |
+| POST | /repair/statistics   | 数据统计                       |
+| POST | /repair/satisfaction | 满意度分析                     |
+| GET  | /repair/repairer_list| 维修人员列表                   |
+| POST | /repair/update       | 更新工单（JSON）               |
+| GET  | /repair/delete       | 删除工单                       |
 
-### 维修人员端
+### 用户管理 / 个人中心
 
-| 方法 | 路径               | 说明         |
-| ---- | ------------------ | ------------ |
-| POST | /repair/my_orders  | 我的工单列表 |
-| POST | /repair/accept     | 接单         |
-| POST | /repair/complete   | 完成维修     |
-| POST | /repair/my_history | 历史工单     |
+| 方法 | 路径             | 说明                         |
+| ---- | ---------------- | ---------------------------- |
+| POST | /user/query      | 用户查询（支持按类型、ID 过滤）|
+| POST | /user/create     | 新增用户（JSON）             |
+| POST | /user/update     | 更新用户信息（JSON）         |
+| GET  | /user/detail     | 用户详情                     |
+| GET  | /user/delete     | 删除用户                     |
+| POST | /user/update_pwd | 个人中心修改密码（原密码校验）|
 
-### 管理员端
+### 宿舍管理
 
-| 方法 | 路径                  | 说明         |
-| ---- | --------------------- | ------------ |
-| POST | /repair/query         | 全部工单查询 |
-| POST | /repair/assign        | 指派维修人员 |
-| POST | /repair/set_urgency   | 设置紧急程度 |
-| POST | /repair/statistics    | 数据统计     |
-| POST | /repair/satisfaction  | 满意度分析   |
-| GET  | /repair/repairer_list | 维修人员列表 |
+| 方法 | 路径                               | 说明                       |
+| ---- | ---------------------------------- | -------------------------- |
+| POST | /building/query                    | 楼栋查询                   |
+| POST | /building/create                   | 新增楼栋（JSON）           |
+| POST | /building/update                   | 更新楼栋（JSON）           |
+| GET  | /building/delete                   | 删除楼栋                   |
+| GET  | /building/query_floor_num          | 查询楼栋层数               |
+| GET  | /building/occupancy_rate_and_gender| 入住率与性别统计           |
+| POST | /room/query                        | 房间查询                   |
+| POST | /room/create                       | 新增房间（JSON）           |
+| POST | /room/update                       | 更新房间（JSON）           |
+| GET  | /room/delete                       | 删除房间                   |
+| GET  | /room/query_liver_amount           | 查询房间入住人数           |
+| GET  | /room/query_livers                 | 查询房间入住学生           |
+| GET  | /room/capacity_plus_one            | 入住人数 +1                |
+| GET  | /room/capacity_minus_one           | 入住人数 -1                |
