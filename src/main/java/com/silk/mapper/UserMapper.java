@@ -32,4 +32,7 @@ public interface UserMapper {
 	public int queryLiverAmount(Integer roomId);
 
 	public int buildingActualStudentAmount(Integer buildingId);
+
+	// 按角色查询所有用户ID（用于站内通知群发）
+	public List<Integer> queryIdsByType(@Param("userType") Integer userType);
 }

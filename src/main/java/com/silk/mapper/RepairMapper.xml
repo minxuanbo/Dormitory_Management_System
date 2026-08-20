@@ -221,4 +221,27 @@
 		group by date(completed_time)
 	</select>
 
+	<!-- 按报修类型统计 -->
+	<select id="countByType" resultType="map">
+		select rep_item as name, count(1) as value
+		from tb_repair
+		group by rep_item
+		order by value desc
+	</select>
+
+	<!-- 维修人员绩效：工单量/完成量/平均评分/平均完成耗时(小时) -->
+	<select id="repairerPerformance" resultType="map">
+		select r.repairer_id as repairerId,
+		       r.rep_man as repMan,
+		       count(1) as total,
+		       sum(case when r.rep_status in (3, 4) then 1 else 0 end) as done,
+		       round(avg(r.rating), 1) as avgRating,
+		       round(avg(case when r.rep_status in (3, 4)
+		           then timestampdiff(hour, r.assigned_time, r.completed_time) end), 1) as avgHours
+		from tb_repair r
+		where r.repairer_id is not null
+		group by r.repairer_id, r.rep_man
+		order by total desc
+	</select>
+
 </mapper>

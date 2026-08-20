@@ -1,0 +1,277 @@
+<div class="layuimini-container layuimini-page-anim">
+    <div class="layuimini-main">
+
+        <div style="margin: 10px 10px 10px 10px">
+            <form class="layui-form layui-form-pane" action="">
+                <div class="layui-form-item">
+                    <div class="layui-inline">
+                        <label class="layui-form-label">状态</label>
+                        <div class="layui-input-inline">
+                            <select name="isRead">
+                                <option value="">全部</option>
+                                <option value="0">未读</option>
+                                <option value="1">已读</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="layui-inline">
+                        <button type="submit" class="layui-btn layui-btn-primary" lay-submit lay-filter="noticeSearchBtn"><i class="layui-icon"></i> 筛 选</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <script type="text/html" id="noticeToolbar">
+            <div class="layui-btn-container">
+                <button class="layui-btn layui-btn-normal layui-btn-sm" lay-event="markAllRead">
+                    <i class="layui-icon layui-icon-ok"></i>全部已读
+                </button>
+                <button class="layui-btn layui-btn-sm layui-btn-danger" lay-event="deleteSelected">
+                    <i class="layui-icon layui-icon-delete"></i>删除
+                </button>
+                <button class="layui-btn layui-btn-sm layui-btn-warm" lay-event="publish" id="publishNoticeBtn" style="display:none;">
+                    <i class="layui-icon layui-icon-notice"></i>发布公告
+                </button>
+            </div>
+        </script>
+
+        <table class="layui-hide" id="noticeTable" lay-filter="noticeTableFilter"></table>
+
+    </div>
+</div>
+
+<script type="text/html" id="noticeBar">
+    <a class="layui-btn layui-btn-xs" lay-event="detail">详情</a>
+    {{# if(d.isRead === 0){ }}
+    <a class="layui-btn layui-btn-xs layui-btn-normal" lay-event="read">标为已读</a>
+    {{# } else { }}
+    <a class="layui-btn layui-btn-xs layui-btn-warm" lay-event="unread">标为未读</a>
+    {{# } }}
+    <a class="layui-btn layui-btn-xs layui-btn-danger" lay-event="del">删除</a>
+</script>
+
+<script>
+    // 本页作为内容页由 miniPage 注入到父页面(index.html)中运行，不可重复引入 layui.js / lay-config.js
+    layui.use(['form', 'table', 'layer', 'axios', 'storage'], function () {
+        var $ = layui.jquery,
+            form = layui.form,
+            table = layui.table,
+            layer = layui.layer,
+            axios = layui.axios,
+            storage = layui.storage;
+
+        var user = storage.get('user') || {};
+        var isAdmin = (user.userType === 2);
+
+        form.render('select');
+
+        table.render({
+            elem: '#noticeTable',
+            method: 'post',
+            url: API_BASE + '/notification/my',
+            toolbar: '#noticeToolbar',
+            defaultToolbar: ['filter', 'exports', 'print'],
+            cols: [[
+                {type: "checkbox", width: 50},
+                {field: 'type', width: 90, title: '类型', templet: function (row) {
+                        if (row.type === 1) {
+                            return '<span class="layui-badge layui-bg-orange">重要</span>';
+                        }
+                        return '<span class="layui-badge layui-bg-gray">一般</span>';
+                    }},
+                {field: 'head', width: 220, title: '标题', templet: function (row) {
+                        // 未读标题加粗
+                        return row.isRead === 0 ? '<b>' + row.head + '</b>' : row.head;
+                    }},
+                {field: 'content', title: '内容', minWidth: 300, ellipsis: true},
+                {field: 'createTime', width: 150, title: '时间', sort: true},
+                {field: 'isRead', width: 90, title: '状态', templet: function (row) {
+                        return row.isRead === 0
+                            ? '<span style="color:#f40;">未读</span>'
+                            : '<span style="color:#999;">已读</span>';
+                    }},
+                {title: '操作', width: 250, toolbar: '#noticeBar', align: 'center'}
+            ]],
+            limits: [10, 15, 20, 30, 50],
+            limit: 10,
+            page: true,
+            skin: 'line',
+            done: function () {
+                // 仅管理员显示「发布公告」按钮
+                if (isAdmin) {
+                    $('#publishNoticeBtn').show();
+                } else {
+                    $('#publishNoticeBtn').remove();
+                }
+            }
+        });
+
+        // 刷新父页面顶栏未读角标
+        function refreshBadge() {
+            if (typeof window.refreshNoticeBadge === 'function') {
+                window.refreshNoticeBadge();
+            }
+        }
+
+        form.on('submit(noticeSearchBtn)', function (data) {
+            var where = {};
+            if (data.field.isRead !== '') {
+                where.isRead = parseInt(data.field.isRead, 10);
+            }
+            table.reload('noticeTable', {where: where, page: {curr: 1}}, 'data');
+            return false;
+        });
+
+        table.on('toolbar(noticeTableFilter)', function (obj) {
+            if (obj.event === 'markAllRead') {
+                axios.post('notification/mark_all_read').then(function () {
+                    layer.msg('已全部标记为已读', {icon: 1});
+                    table.reload('noticeTable');
+                    refreshBadge();
+                }).catch(function () {
+                    layer.msg('操作失败', {icon: 2});
+                });
+            } else if (obj.event === 'deleteSelected') {
+                var rows = table.checkStatus('noticeTable').data;
+                if (rows.length === 0) {
+                    layer.msg('还没有选中数据');
+                    return;
+                }
+                layer.confirm('真的要删除选中通知吗', function (index) {
+                    var arr = rows.map(function (item) { return item.id; });
+                    axios.get('notification/delete?ids=' + arr.join(',')).then(function () {
+                        layer.msg('删除成功', {icon: 1});
+                        table.reload('noticeTable');
+                        refreshBadge();
+                        layer.close(index);
+                    }).catch(function () {
+                        layer.msg('删除失败', {icon: 2});
+                    });
+                });
+            } else if (obj.event === 'publish') {
+                showPublishDialog();
+            }
+        });
+
+        table.on('tool(noticeTableFilter)', function (obj) {
+            var data = obj.data;
+            if (obj.event === 'detail') {
+                layer.open({
+                    type: 1,
+                    title: '通知详情',
+                    area: ['520px', '320px'],
+                    shadeClose: true,
+                    content: '<div style="padding:20px 25px;">' +
+                        '<h3 style="font-size:16px;margin-bottom:12px;">' + data.head + '</h3>' +
+                        '<div style="color:#666;font-size:12px;margin-bottom:15px;">' + (data.createTime || '') + '</div>' +
+                        '<div style="line-height:1.8;word-break:break-all;">' + (data.content || '（无内容）') + '</div>' +
+                        '</div>'
+                });
+                // 打开详情即视为已读
+                if (data.isRead === 0) {
+                    axios.post('notification/mark_read', {id: data.id}).then(function () {
+                        table.reload('noticeTable', {}, 'data');
+                        refreshBadge();
+                    });
+                }
+            } else if (obj.event === 'read') {
+                axios.post('notification/mark_read', {id: data.id}).then(function () {
+                    table.reload('noticeTable', {}, 'data');
+                    refreshBadge();
+                }).catch(function () {
+                    layer.msg('操作失败', {icon: 2});
+                });
+            } else if (obj.event === 'unread') {
+                axios.post('notification/mark_unread', {id: data.id}).then(function () {
+                    table.reload('noticeTable', {}, 'data');
+                    refreshBadge();
+                }).catch(function () {
+                    layer.msg('操作失败', {icon: 2});
+                });
+            } else if (obj.event === 'del') {
+                layer.confirm('真的要删除这条通知吗', function (index) {
+                    axios.get('notification/delete?ids=' + data.id).then(function () {
+                        layer.msg('删除成功', {icon: 1});
+                        table.reload('noticeTable', {}, 'data');
+                        refreshBadge();
+                        layer.close(index);
+                    }).catch(function () {
+                        layer.msg('删除失败', {icon: 2});
+                    });
+                });
+            }
+        });
+
+        // 管理员发布公告弹窗
+        function showPublishDialog() {
+            var html = '<div style="padding:20px 25px;">' +
+                '<div class="layui-form-item">' +
+                '<label class="layui-form-label">接收对象</label>' +
+                '<div class="layui-input-block">' +
+                '<select id="pubTarget">' +
+                '<option value="all">全部用户</option>' +
+                '<option value="student">全体学生</option>' +
+                '<option value="repairer">全体维修人员</option>' +
+                '</select>' +
+                '</div></div>' +
+                '<div class="layui-form-item">' +
+                '<label class="layui-form-label">重要程度</label>' +
+                '<div class="layui-input-block">' +
+                '<select id="pubType">' +
+                '<option value="0">一般</option>' +
+                '<option value="1">重要</option>' +
+                '</select>' +
+                '</div></div>' +
+                '<div class="layui-form-item">' +
+                '<label class="layui-form-label">标题</label>' +
+                '<div class="layui-input-block">' +
+                '<input type="text" id="pubHead" class="layui-input" placeholder="请输入通知标题" maxlength="100">' +
+                '</div></div>' +
+                '<div class="layui-form-item layui-form-text">' +
+                '<label class="layui-form-label">内容</label>' +
+                '<div class="layui-input-block">' +
+                '<textarea id="pubContent" class="layui-textarea" placeholder="请输入通知内容" maxlength="500"></textarea>' +
+                '</div></div>' +
+                '<div class="layui-form-item" style="text-align:center;">' +
+                '<button class="layui-btn" id="pubSubmitBtn">确认发布</button>' +
+                '</div></div>';
+
+            var pubIndex = layer.open({
+                type: 1,
+                title: '发布公告',
+                area: ['560px', '480px'],
+                content: html,
+                success: function (layero) {
+                    form.render('select');
+                    layero.find('#pubSubmitBtn').on('click', function () {
+                        var head = layero.find('#pubHead').val().trim();
+                        if (!head) {
+                            layer.msg('请填写通知标题', {icon: 2});
+                            return;
+                        }
+                        var loading = layer.load(2);
+                        axios.post('notification/publish', {
+                            target: layero.find('#pubTarget').val(),
+                            type: parseInt(layero.find('#pubType').val(), 10),
+                            head: head,
+                            content: layero.find('#pubContent').val().trim()
+                        }).then(function (res) {
+                            layer.close(loading);
+                            if (res.code === 200) {
+                                layer.msg('发布成功', {icon: 1});
+                                layer.close(pubIndex);
+                                table.reload('noticeTable');
+                                refreshBadge();
+                            } else {
+                                layer.msg(res.msg || '发布失败', {icon: 2});
+                            }
+                        }).catch(function () {
+                            layer.close(loading);
+                            layer.msg('发布失败，请重试', {icon: 2});
+                        });
+                    });
+                }
+            });
+        }
+    });
+</script>

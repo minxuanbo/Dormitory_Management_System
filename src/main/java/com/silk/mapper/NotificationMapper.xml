@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.silk.mapper.NotificationMapper">
+
+	<resultMap type="com.silk.entity.Notification" id="Notification">
+		<id column="id" property="id"/>
+		<result column="sender_id" property="senderId"/>
+		<result column="user_id" property="userId"/>
+		<result column="head" property="head"/>
+		<result column="content" property="content"/>
+		<result column="type" property="type"/>
+		<result column="is_read" property="isRead"/>
+		<result column="create_time" property="createTime"/>
+		<result column="rel_id" property="relId"/>
+	</resultMap>
+
+	<insert id="insert" keyProperty="id" useGeneratedKeys="true" parameterType="com.silk.entity.Notification">
+		insert into tb_notification(
+			sender_id,
+			user_id,
+			head,
+			content,
+			type,
+			is_read,
+			create_time,
+			rel_id
+		)values(
+			#{senderId},
+			#{userId},
+			#{head},
+			#{content},
+			#{type},
+			#{isRead},
+			#{createTime},
+			#{relId}
+		)
+	</insert>
+
+	<select id="query" resultMap="Notification">
+		select * from tb_notification
+		<where>
+			<if test="userId != null">and user_id = #{userId}</if>
+			<if test="isRead != null">and is_read = #{isRead}</if>
+			<if test="head != null and head != ''">and head like concat('%', #{head}, '%')</if>
+		</where>
+		order by id desc
+	</select>
+
+	<select id="unreadCount" resultType="int">
+		select count(1) from tb_notification where user_id = #{userId} and is_read = 0
+	</select>
+
+	<update id="markRead">
+		update tb_notification set is_read = 1 where id = #{id} and user_id = #{userId}
+	</update>
+
+	<update id="markUnread">
+		update tb_notification set is_read = 0 where id = #{id} and user_id = #{userId}
+	</update>
+
+	<update id="markAllRead">
+		update tb_notification set is_read = 1 where user_id = #{userId} and is_read = 0
+	</update>
+
+	<delete id="delete">
+		delete from tb_notification where id = #{id} and user_id = #{userId}
+	</delete>
+
+</mapper>

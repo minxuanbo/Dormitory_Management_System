@@ -1,6 +1,7 @@
 package com.silk.entity;
 
 import javax.validation.constraints.NotNull;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import org.hibernate.validator.constraints.Length;
 import com.silk.utils.Entity;
 import java.util.Date;
@@ -19,6 +20,7 @@ public class Repair extends Entity{
 
 	private String description;
 
+	@JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
 	private Date repDate;
 
 	private Integer stuId;
@@ -38,8 +40,11 @@ public class Repair extends Entity{
 	private String repairRecord;	// 维修记录
 	private Integer rating;			// 评分 1-5
 	private String feedback;		// 评价内容
+	@JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
 	private Date assignedTime;		// 派单时间
+	@JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
 	private Date acceptedTime;		// 接单时间
+	@JsonFormat(pattern = "yyyy-MM-dd HH:mm", timezone = "GMT+8")
 	private Date completedTime;		// 完成时间
 
 	/**

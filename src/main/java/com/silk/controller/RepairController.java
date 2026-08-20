@@ -6,6 +6,7 @@ import com.silk.entity.Repair;
 import com.silk.entity.Room;
 import com.silk.entity.User;
 import com.silk.service.BuildingService;
+import com.silk.service.NotificationService;
 import com.silk.service.RepairService;
 import com.silk.service.RoomService;
 import com.silk.service.UserService;
@@ -31,6 +32,8 @@ public class RepairController {
     private RoomService roomService;
     @Autowired
     private BuildingService buildingService;
+    @Autowired
+    private NotificationService notificationService;
 
     /**
      * 安全转换 Map 参数为 Integer：兼容前端传入的 Number 或字符串数字（如 form 表单提交的 "1"）。
@@ -183,6 +186,33 @@ public class RepairController {
 
             int flag = repairService.create(repair);
             if(flag>0){
+                // ===== 站内通知 =====
+                String locationText = "";
+                if (room != null) {
+                    Building b = buildingService.detail(repair.getBuildingId());
+                    locationText = (b != null ? b.getBuildingName() : "") + " " +
+                            (room.getFloor() != null ? room.getFloor() + "楼" : "") +
+                            (room.getBrand() != null ? room.getBrand() : "");
+                    locationText = locationText.trim();
+                }
+                if (repair.getRepairerId() != null) {
+                    // 自动指派成功：通知维修人员
+                    notificationService.notify(repair.getRepairerId(),
+                            "新工单指派",
+                            "您有新工单#" + repair.getId() + "【" + repair.getRepItem() + "】（" + locationText + "），请及时接单处理。",
+                            0, repair.getId());
+                } else {
+                    // 无楼栋负责人：通知管理员尽快手动指派
+                    notificationService.notifyByUserType(2,
+                            "新报修待指派",
+                            "有新报修工单#" + repair.getId() + "【" + repair.getRepItem() + "】（" + locationText + "），所在楼栋未设置负责维修人员，请尽快指派。",
+                            1);
+                }
+                // 通知学生已提交
+                notificationService.notify(param.getId(),
+                        "报修提交成功",
+                        "您的报修【" + repair.getRepItem() + "】已提交（工单#" + repair.getId() + "），请留意处理进度。",
+                        0, repair.getId());
                 return Result.ok();
             }else{
                 return Result.fail();
@@ -218,6 +248,22 @@ public class RepairController {
 
         int flag = repairService.updateSelective(repair);
         if(flag>0){
+            // ===== 站内通知 =====
+            Repair old = repairService.detail(id);
+            String itemText = old != null ? old.getRepItem() : "";
+            String repairerName = repairer != null ? repairer.getUserName() : "";
+            // 通知维修人员
+            notificationService.notify(repairerId,
+                    "管理员指派工单",
+                    "管理员向您指派了工单#" + id + "【" + itemText + "】，请及时接单处理。",
+                    0, id);
+            // 通知学生
+            if (old != null && old.getStuId() != null) {
+                notificationService.notify(old.getStuId(),
+                        "工单已指派",
+                        "您的报修【" + itemText + "】（工单#" + id + "）已指派给 " + repairerName + "，请留意处理进度。",
+                        0, id);
+            }
             return Result.ok("指派成功");
         }else{
             return Result.fail("指派失败");
@@ -275,6 +321,19 @@ public class RepairController {
 
         int flag = repairService.reject(id);
         if(flag>0){
+            // ===== 站内通知 =====
+            // 通知管理员重新指派（重要）
+            notificationService.notifyByUserType(2,
+                    "工单被拒绝待重新指派",
+                    param.getUserName() + " 拒绝了工单#" + id + "【" + old.getRepItem() + "】，工单已退回待指派，请重新指派维修人员。",
+                    1);
+            // 通知学生
+            if (old.getStuId() != null) {
+                notificationService.notify(old.getStuId(),
+                        "工单处理人调整中",
+                        "您的报修【" + old.getRepItem() + "】（工单#" + id + "）原维修人员无法受理，管理员将尽快为您重新指派。",
+                        0, id);
+            }
             return Result.ok("已拒绝，工单返回待指派");
         }else{
             return Result.fail("操作失败");
@@ -300,6 +359,14 @@ public class RepairController {
 
         int flag = repairService.updateSelective(repair);
         if(flag>0){
+            // ===== 站内通知：告知学生维修人员已接单 =====
+            Repair old = repairService.detail(id);
+            if (old != null && old.getStuId() != null) {
+                notificationService.notify(old.getStuId(),
+                        "维修人员已接单",
+                        param.getUserName() + " 已接单，正在处理您的报修【" + old.getRepItem() + "】（工单#" + id + "）。",
+                        0, id);
+            }
             return Result.ok("接单成功");
         }else{
             return Result.fail("接单失败");
@@ -325,6 +392,14 @@ public class RepairController {
 
         int flag = repairService.updateSelective(repair);
         if(flag>0){
+            // ===== 站内通知：告知学生前往评价 =====
+            Repair old = repairService.detail(repairParam.getId());
+            if (old != null && old.getStuId() != null) {
+                notificationService.notify(old.getStuId(),
+                        "报修已完成，请评价",
+                        "您的报修【" + old.getRepItem() + "】（工单#" + repairParam.getId() + "）已完成维修，欢迎对本次服务进行评价。",
+                        0, repairParam.getId());
+            }
             return Result.ok("完成维修成功");
         }else{
             return Result.fail("完成维修失败");
@@ -362,6 +437,14 @@ public class RepairController {
 
         int flag = repairService.updateSelective(updateRepair);
         if(flag>0){
+            // ===== 站内通知：告知维修人员收到评价 =====
+            if (repair.getRepairerId() != null) {
+                notificationService.notify(repair.getRepairerId(),
+                        "收到学生评价",
+                        "您负责的工单#" + id + "【" + repair.getRepItem() + "】收到 " + rating + " 星评价" +
+                                (feedback != null && !feedback.trim().isEmpty() ? "：" + feedback : "。"),
+                        0, id);
+            }
             return Result.ok("评价成功");
         }else{
             return Result.fail("评价失败");

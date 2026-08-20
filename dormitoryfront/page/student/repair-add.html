@@ -13,6 +13,9 @@
     .repair-add .urgency-item i {margin-right:6px;font-size:16px;}
     .repair-add .upload-box {border:2px dashed #d9d9d9;border-radius:8px;padding:20px;text-align:center;transition:all 0.3s;cursor:pointer;}
     .repair-add .upload-box:hover {border-color:#1e9fff;background:#f0f7ff;}
+    /* 拖拽文件悬停时的交互反馈（layui upload 模块拖入时会给元素加 lay-over 属性） */
+    .repair-add .upload-box[lay-over] {border-color:#16b777;background:#e8faf3;transform:scale(1.02);box-shadow:0 4px 16px rgba(22,183,119,0.18);}
+    .repair-add .upload-box[lay-over] i {color:#16b777;}
     .repair-add .upload-tip {color:#999;font-size:12px;margin-top:8px;}
     .repair-add .uploaded-list {margin-top:15px;}
     .repair-add .uploaded-item {display:inline-block;position:relative;margin-right:10px;margin-bottom:10px;}
@@ -43,6 +46,7 @@
                             <option value="家具维修">家具维修</option>
                             <option value="门窗维修">门窗维修</option>
                             <option value="电器维修">电器维修</option>
+                            <option value="网络维修">网络维修</option>
                             <option value="其他">其他</option>
                         </select>
                     </div>

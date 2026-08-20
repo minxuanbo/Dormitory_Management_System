@@ -135,21 +135,18 @@ INSERT INTO tb_repair (rep_item, description, rep_date, stu_id, building_id, roo
 ('水电维修', '卫生间灯不亮，疑似灯泡烧坏', DATE_SUB(NOW(), INTERVAL 6 DAY), 1001, 13, 130701, 4, '王师傅', 0, 2002, NULL, '已更换LED灯泡', 4, '维修很快，服务态度好', DATE_SUB(NOW(), INTERVAL 6 DAY), DATE_SUB(NOW(), INTERVAL 5 DAY), DATE_SUB(NOW(), INTERVAL 4 DAY));
 
 -- ============================================
--- 5. 已有数据库升级脚本（仅当数据库已存在、不想重建时手动执行）
+-- 5. 站内通知表
 -- ============================================
--- ALTER TABLE tb_user ADD COLUMN phone VARCHAR(20) DEFAULT NULL COMMENT '联系电话' AFTER gender;
--- CREATE TABLE tb_building (
---     id INT PRIMARY KEY COMMENT '楼栋编号',
---     building_name VARCHAR(50) NOT NULL COMMENT '楼栋名称',
---     floor_num INT DEFAULT 6 COMMENT '总层数',
---     liver_gender INT DEFAULT 1 COMMENT '入住学生性别：女=0；男=1',
---     manager_id INT DEFAULT NULL COMMENT '维修人员ID'
--- ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
--- CREATE TABLE tb_room (
---     id INT PRIMARY KEY COMMENT '房间ID：楼栋ID*10000+楼层*100+房号',
---     building_id INT NOT NULL,
---     floor INT NOT NULL,
---     brand VARCHAR(20) NOT NULL COMMENT '门牌号',
---     room_capacity INT DEFAULT 4,
---     room_type INT DEFAULT 0
--- ) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+DROP TABLE IF EXISTS tb_notification;
+CREATE TABLE tb_notification (
+    id INT PRIMARY KEY AUTO_INCREMENT,
+    sender_id INT DEFAULT NULL COMMENT '发送人ID（系统通知为NULL）',
+    user_id INT NOT NULL COMMENT '接收人ID',
+    head VARCHAR(100) NOT NULL COMMENT '通知标题',
+    content VARCHAR(500) DEFAULT NULL COMMENT '通知内容',
+    type INT DEFAULT 0 COMMENT '通知类型：0=一般 1=重要',
+    is_read INT DEFAULT 0 COMMENT '已读状态：0=未读 1=已读',
+    create_time DATETIME DEFAULT NULL COMMENT '创建时间',
+    rel_id INT DEFAULT NULL COMMENT '关联工单ID'
+) ENGINE=InnoDB DEFAULT CHARSET=utf8;
+

@@ -173,6 +173,12 @@ public class RepairService {
         stats.put("trendDoneData", trendDoneData);
         stats.put("last7DaysNew", trendNewData);
         stats.put("last7DaysDone", trendDoneData);
+
+        // 报修类型分布
+        stats.put("typePieData", repairMapper.countByType());
+
+        // 维修人员绩效
+        stats.put("repairerPerformance", repairMapper.repairerPerformance());
         return stats;
     }
 

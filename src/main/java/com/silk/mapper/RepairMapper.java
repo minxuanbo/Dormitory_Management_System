@@ -40,4 +40,10 @@ public interface RepairMapper {
 
 	public List<Map<String, Object>> countTrendDone();
 
+	// 按报修类型统计（饼图）
+	public List<Map<String, Object>> countByType();
+
+	// 维修人员绩效（工单量/完成量/平均评分/平均耗时）
+	public List<Map<String, Object>> repairerPerformance();
+
 }

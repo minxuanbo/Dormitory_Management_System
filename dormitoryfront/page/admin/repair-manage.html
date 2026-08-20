@@ -164,6 +164,10 @@
                     <td style="font-weight:bold;background:#f8f8f8;">评价内容</td>
                     <td id="detailEvaluate"></td>
                 </tr>
+                <tr>
+                    <td style="font-weight:bold;background:#f8f8f8;">处理进度</td>
+                    <td colspan="3" id="detailTimeline"></td>
+                </tr>
             </tbody>
         </table>
     </div>
@@ -268,6 +272,48 @@
             }, 'data');
             return false;
         });
+
+        // 构建工单进度时间线（提交→指派→接单→完成→评价）
+        function buildTimelineHtml(data) {
+            var steps = [];
+            steps.push({title: '提交报修', time: data.repDate, done: true});
+            if (data.assignedTime) {
+                steps.push({title: '指派维修人员' + (data.repMan ? '（' + data.repMan + '）' : ''), time: data.assignedTime, done: true});
+            } else {
+                steps.push({title: '待指派', done: false});
+            }
+            if (data.acceptedTime) {
+                steps.push({title: '维修人员接单', time: data.acceptedTime, done: true});
+            } else if (data.repStatus >= 1) {
+                steps.push({title: '待接单', done: false});
+            }
+            if (data.completedTime) {
+                var completeTitle = '完成维修';
+                if (data.repairRecord) {
+                    completeTitle += '<br><span style="color:#999;font-size:12px;">维修记录：' + data.repairRecord + '</span>';
+                }
+                steps.push({title: completeTitle, time: data.completedTime, done: true});
+            } else if (data.repStatus >= 2) {
+                steps.push({title: '维修中', done: false});
+            }
+            if (data.repStatus === 4) {
+                var evalText = (data.rating ? data.rating + '星' : '') + (data.feedback ? '：' + data.feedback : '');
+                steps.push({title: '学生评价' + (evalText ? '<br><span style="color:#999;font-size:12px;">' + evalText + '</span>' : ''), done: true});
+            } else if (data.repStatus === 3) {
+                steps.push({title: '待评价', done: false});
+            }
+            var html = '<ul class="layui-timeline" style="margin:5px 0;">';
+            steps.forEach(function (s) {
+                html += '<li class="layui-timeline-item">' +
+                    '<i class="layui-icon layui-timeline-axis" style="' + (s.done ? '' : 'color:#c2c2c2;') + '">&#xe63f;</i>' +
+                    '<div class="layui-timeline-content layui-text">' +
+                    '<h4 class="layui-timeline-title" style="font-size:14px;' + (s.done ? '' : 'color:#c2c2c2;') + '">' + s.title + '</h4>' +
+                    (s.time ? '<p style="color:#999;font-size:12px;margin-top:2px;">' + s.time + '</p>' : '') +
+                    '</div></li>';
+            });
+            html += '</ul>';
+            return html;
+        }
 
         function loadRepairerList(callback) {
             axios.get('/repair/repairer_list').then(function (res) {
@@ -414,6 +460,7 @@
 
                         $('#detailTime').text(data.repDate || data.submitTime || '--');
                         $('#detailDesc').text(data.description || '无');
+                        $('#detailTimeline').html(buildTimelineHtml(data));
 
                         // 渲染报修图片（逗号分隔的URL列表）
                         if (data.images) {

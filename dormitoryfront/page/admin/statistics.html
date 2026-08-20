@@ -19,6 +19,39 @@
             </div>
             <div class="layui-col-md6">
                 <div class="layui-card">
+                    <div class="layui-card-header"><i class="fa fa-tags" style="margin-right:10px;color:#5b8ff9;"></i>报修类型分布（饼图）</div>
+                    <div class="layui-card-body">
+                        <div id="typePieChart" style="width:100%;height:380px;"></div>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md6">
+                <div class="layui-card">
+                    <div class="layui-card-header"><i class="fa fa-trophy" style="margin-right:10px;color:#fa8c16;"></i>维修人员绩效</div>
+                    <div class="layui-card-body" style="height:380px;overflow-y:auto;">
+                        <table class="layui-table" lay-skin="line">
+                            <colgroup>
+                                <col><col><col><col><col><col>
+                            </colgroup>
+                            <thead>
+                                <tr>
+                                    <th>维修人员</th>
+                                    <th style="text-align:center;">工单量</th>
+                                    <th style="text-align:center;">完成量</th>
+                                    <th style="text-align:center;">完成率</th>
+                                    <th style="text-align:center;">平均评分</th>
+                                    <th style="text-align:center;">平均耗时</th>
+                                </tr>
+                            </thead>
+                            <tbody id="performanceTbody">
+                                <tr><td colspan="6" style="text-align:center;color:#999;">加载中...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="layui-col-md6">
+                <div class="layui-card">
                     <div class="layui-card-header"><i class="fa fa-bar-chart" style="margin-right:10px;color:#16baaa;"></i>工单状态统计（柱状图）</div>
                     <div class="layui-card-body">
                         <div id="statusBarChart" style="width:100%;height:380px;"></div>
@@ -45,6 +78,7 @@
 
         var statusPieChart = echarts.init(document.getElementById('statusPieChart'));
         var urgencyPieChart = echarts.init(document.getElementById('urgencyPieChart'));
+        var typePieChart = echarts.init(document.getElementById('typePieChart'));
         var statusBarChart = echarts.init(document.getElementById('statusBarChart'));
         var trendLineChart = echarts.init(document.getElementById('trendLineChart'));
 
@@ -256,8 +290,68 @@
             };
         }
 
+        // 报修类型分布饼图默认配置
+        function getDefaultTypePieOption() {
+            return {
+                tooltip: {
+                    trigger: 'item',
+                    formatter: '{a} <br/>{b}: {c} ({d}%)'
+                },
+                legend: {
+                    orient: 'vertical',
+                    left: 'left',
+                    top: 'center'
+                },
+                series: [
+                    {
+                        name: '报修类型',
+                        type: 'pie',
+                        radius: ['40%', '70%'],
+                        center: ['60%', '50%'],
+                        avoidLabelOverlap: false,
+                        itemStyle: {
+                            borderRadius: 10,
+                            borderColor: '#fff',
+                            borderWidth: 2
+                        },
+                        label: {
+                            show: true,
+                            formatter: '{b}\n{d}%'
+                        },
+                        data: []
+                    }
+                ]
+            };
+        }
+
+        // 渲染维修人员绩效表
+        function renderPerformanceTable(list) {
+            var html = '';
+            if (!list || list.length === 0) {
+                html = '<tr><td colspan="6" style="text-align:center;color:#999;">暂无数据</td></tr>';
+            } else {
+                list.forEach(function (p) {
+                    var total = p.total || 0;
+                    var done = p.done || 0;
+                    var rate = total > 0 ? Math.round(done * 100 / total) + '%' : '-';
+                    var avgRating = (p.avgRating !== null && p.avgRating !== undefined && p.avgRating !== '') ? p.avgRating : '-';
+                    var avgHours = (p.avgHours !== null && p.avgHours !== undefined && p.avgHours !== '') ? p.avgHours + ' 小时' : '-';
+                    html += '<tr>' +
+                        '<td>' + (p.repMan || '-') + '</td>' +
+                        '<td style="text-align:center;">' + total + '</td>' +
+                        '<td style="text-align:center;">' + done + '</td>' +
+                        '<td style="text-align:center;">' + rate + '</td>' +
+                        '<td style="text-align:center;">' + avgRating + '</td>' +
+                        '<td style="text-align:center;">' + avgHours + '</td>' +
+                        '</tr>';
+                });
+            }
+            $('#performanceTbody').html(html);
+        }
+
         statusPieChart.setOption(getDefaultStatusPieOption());
         urgencyPieChart.setOption(getDefaultUrgencyPieOption());
+        typePieChart.setOption(getDefaultTypePieOption());
         statusBarChart.setOption(getDefaultStatusBarOption());
         trendLineChart.setOption(getDefaultTrendLineOption());
 
@@ -288,6 +382,16 @@
                 ];
             }
             urgencyPieChart.setOption(urgencyPieOpt);
+
+            // 报修类型分布
+            var typePieOpt = getDefaultTypePieOption();
+            if (data.typePieData && Array.isArray(data.typePieData)) {
+                typePieOpt.series[0].data = data.typePieData;
+            }
+            typePieChart.setOption(typePieOpt);
+
+            // 维修人员绩效表
+            renderPerformanceTable(data.repairerPerformance);
 
             var statusBarOpt = getDefaultStatusBarOption();
             if (data.statusBarData && Array.isArray(data.statusBarData)) {
@@ -325,6 +429,7 @@
         window.onresize = function () {
             statusPieChart.resize();
             urgencyPieChart.resize();
+            typePieChart.resize();
             statusBarChart.resize();
             trendLineChart.resize();
         };

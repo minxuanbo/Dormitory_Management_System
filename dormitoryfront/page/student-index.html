@@ -36,6 +36,9 @@
                 <li class="layui-nav-item" lay-unselect>
                     <a href="javascript:;" data-refresh="刷新"><i class="fa fa-refresh"></i></a>
                 </li>
+                <li class="layui-nav-item" lay-unselect>
+                    <a href="javascript:;" id="noticeBell" title="通知中心" style="position:relative;"><i class="fa fa-bell"></i><span class="layui-badge" id="noticeBadge" style="display:none;position:absolute;top:8px;left:24px;height:16px;line-height:16px;padding:0 4px;font-size:11px;min-width:16px;text-align:center;"></span></a>
+                </li>
                 <li class="layui-nav-item mobile layui-hide-xs" lay-unselect>
                     <a href="javascript:;" data-check-screen="full"><i class="fa fa-arrows-alt"></i></a>
                 </li>
@@ -86,6 +89,12 @@
                 {title: "报修列表", href: "student/repair-list.html", icon: "fa fa-list", target: "_self"},
                 {title: "提交报修", href: "student/repair-add.html", icon: "fa fa-plus", target: "_self"}
             ]
+        },
+        {
+            title: "通知中心",
+            icon: "fa fa-bell-o",
+            href: "notification-center.html",
+            target: "_self"
         },
         {
             title: "个人中心",
@@ -145,6 +154,49 @@
         // 顶栏下拉 -> 个人中心
         $('.user-center').on("click", function () {
             layui.miniPage.hashChange('user-center.html');
+        });
+
+        // ===== 站内通知：顶栏 + 侧边菜单未读角标（30秒轮询） =====
+        // 给侧边菜单“通知中心”项注入角标（miniMenu 动态渲染，需等 DOM 就绪）
+        function injectMenuBadge() {
+            var $link = $('a[layuimini-href="notification-center.html"]');
+            if ($link.length && !$link.find('.notice-menu-badge').length) {
+                $link.find('.layui-left-nav').append('<span class="layui-badge layui-badge-dot notice-menu-badge" style="display:none;margin-left:6px;"></span>');
+            }
+            return $link.length > 0;
+        }
+        function setNoticeBadges(count) {
+            count = parseInt(count, 10) || 0;
+            // 顶栏铃铛
+            if (count > 0) {
+                $('#noticeBadge').text(count > 99 ? '99+' : count).show();
+            } else {
+                $('#noticeBadge').hide();
+            }
+            // 侧边菜单
+            var $menuBadge = $('.notice-menu-badge');
+            if (count > 0) {
+                $menuBadge.show();
+            } else {
+                $menuBadge.hide();
+            }
+        }
+        function refreshNoticeBadge() {
+            axios.post('notification/unread_count').then(function (res) {
+                var count = (res && res.code === 200 && res.data) ? parseInt(res.data, 10) : 0;
+                setNoticeBadges(count);
+            }).catch(function () {});
+        }
+        window.refreshNoticeBadge = refreshNoticeBadge;   // 供通知中心页面操作后刷新
+        // 菜单由 miniMenu 异步渲染，轮询注入直到成功（最多尝试若干次）
+        (function tryInject(times) {
+            if (injectMenuBadge()) return;
+            if (times > 0) setTimeout(function () { tryInject(times - 1); }, 300);
+        })(20);
+        refreshNoticeBadge();
+        setInterval(refreshNoticeBadge, 30000);
+        $('#noticeBell').on('click', function () {
+            layui.miniPage.hashChange('notification-center.html');
         });
     });
 </script>

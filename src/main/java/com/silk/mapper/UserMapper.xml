@@ -124,4 +124,8 @@
 	<select id="buildingActualStudentAmount" resultType="int">
 		select count(1) from tb_user where room_id like concat(#{buildingId}, '____')
 	</select>
+
+	<select id="queryIdsByType" resultType="int">
+		select id from tb_user where user_type = #{userType}
+	</select>
 </mapper>
